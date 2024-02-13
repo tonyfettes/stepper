@@ -351,7 +351,9 @@ let rec annot (act : Act.t) (gas : Gas.t) (lvl : int) (ctx : Ctx.t) =
       if l > lvl then
         let act, gas, c = annot a All l c in
         (act, gas, Residue (a, All, l, c))
-      else annot act gas lvl c
+      else
+        let act, gas, c = annot act gas lvl c in
+        (act, gas, Residue (a, All, l, c))
 
 let rec step (exp : Exp.t) =
   let instr'd = instr Any Pause One 0 exp in
@@ -416,7 +418,7 @@ let () =
   let body =
     Exp.Add (Add (Add (Int 1, Int 2), Int 3), Add (Add (Int 1, Int 2), Int 3))
   in
-  let exp = Exp.Filter (Pat.Add (Val, Val), Act.Skip, All, body) in
+  let exp = Exp.Filter (Pat.Add (Int 1, Int 2), Act.Skip, All, body) in
   let trunk =
     step exp
     |> List.map (fun (_, _, c, e) ->
