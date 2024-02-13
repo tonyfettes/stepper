@@ -209,12 +209,12 @@ module Result = struct
     | Filter (p, a, g, e) -> (
         match transition e with
         | `Err (err, exp) -> `Err (err, exp)
-        | `Val value -> `Exp value
+        | `Val value -> `Val value
         | `Exp exp -> `Exp (Filter (p, a, g, exp)))
     | Residue (a, g, l, e) -> (
         match transition e with
         | `Err (err, exp) -> `Err (err, exp)
-        | `Val exp -> `Exp exp
+        | `Val exp -> `Val exp
         | `Exp exp -> `Exp (Residue (a, g, l, exp)))
 
   let rec eval (expr : Exp.t) =
@@ -258,8 +258,8 @@ module Ctx = struct
         Printf.sprintf "filter %s do %s for %s in %s" (Pat.to_string p)
           (Act.to_string a) (Gas.to_string g) (to_string c)
     | Residue (a, g, l, c) ->
-        Printf.sprintf "do %s for %s at %d in %s" (Act.to_string a) (Gas.to_string g) l
-          (to_string c)
+        Printf.sprintf "do %s for %s at %d in %s" (Act.to_string a)
+          (Gas.to_string g) l (to_string c)
 
   let rec decompose (exp : Exp.t) =
     match exp with
@@ -298,13 +298,14 @@ module Ctx = struct
     | Residue (a, g, l, c) -> Residue (a, g, l, compose c exp)
 end
 
-let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int) (exp : Exp.t) =
+let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
+    (exp : Exp.t) =
   let wrap exp =
     if Pat.matches pat exp then Exp.Residue (act, gas, lvl, exp) else exp
   in
   match Result.transition exp with
   | `Err _ -> exp
-  | `Val value -> value
+  | `Val _ -> exp
   | `Exp _ -> (
       match exp with
       | Var var -> wrap (Var var)
@@ -330,53 +331,51 @@ let rec annot (act : Act.t) (gas : Gas.t) (lvl : int) (ctx : Ctx.t) =
   match ctx with
   | Top -> (act, gas, ctx)
   | Add_l (c, e) ->
-    let (act, gas, c) = annot act gas lvl c in
-    (act, gas, Add_l (c, e))
-  | Add_r (e, c) -> 
-    let (act, gas, c) = annot act gas lvl c in
-    (act, gas, Add_r (e, c))
+      let act, gas, c = annot act gas lvl c in
+      (act, gas, Add_l (c, e))
+  | Add_r (e, c) ->
+      let act, gas, c = annot act gas lvl c in
+      (act, gas, Add_r (e, c))
   | App_l (c, e) ->
-    let (act, gas, c) = annot act gas lvl c in
-    (act, gas, App_l (c, e))
+      let act, gas, c = annot act gas lvl c in
+      (act, gas, App_l (c, e))
   | App_r (e, c) ->
-    let (act, gas, c) = annot act gas lvl c in
-    (act, gas, App_r (e, c))
+      let act, gas, c = annot act gas lvl c in
+      (act, gas, App_r (e, c))
   | Filter (p, a, g, c) ->
-    let (act, gas, c) = annot act gas lvl c in
-    (act, gas, Filter (p, a, g, c))
+      let act, gas, c = annot act gas lvl c in
+      (act, gas, Filter (p, a, g, c))
   | Residue (a, One, l, c) ->
-    if l > lvl then
-      annot a One l c
-    else
-      annot act One lvl c
+      if l > lvl then annot a One l c else annot act One lvl c
   | Residue (a, All, l, c) ->
-    if l > lvl then
-      let (act, gas, c) = annot a All l c in
-      (act, gas, Residue (a, All, l, c))
-    else
-      annot act gas lvl c
+      if l > lvl then
+        let act, gas, c = annot a All l c in
+        (act, gas, Residue (a, All, l, c))
+      else annot act gas lvl c
 
 let rec step (exp : Exp.t) =
-  Printf.printf "stepping %s\n" (Exp.to_string exp);
   let instr'd = instr Any Pause One 0 exp in
-  Printf.printf "instruct %s\n" (Exp.to_string instr'd);
   let decomposed = Ctx.decompose instr'd in
-  Printf.printf "decomposed\n";
-  decomposed |>
-  List.iteri (fun i (c, e) -> Printf.printf "%2d: %s { %s }\n" i (Ctx.to_string c) (Exp.to_string e));
-  let annot'd = decomposed |> List.map (fun (ctx, exp) ->
-    let (act, gas, ctx) = annot Pause One 0 ctx in 
-    (act, gas, ctx, exp)) in
-  Printf.printf "annot'd\n";
-  annot'd |>
-    List.iteri (fun i (a, _, c, e) -> Printf.printf "%2d: %s: %s { %s }\n" i (Act.to_string a) (Ctx.to_string c) (Exp.to_string e));
+  let annot'd =
+    decomposed
+    |> List.map (fun (ctx, exp) ->
+           let act, gas, ctx = annot Pause One 0 ctx in
+           (act, gas, ctx, exp))
+  in
+  Printf.printf "==== expr ====\n";
+  Printf.printf "%s\n" (Exp.to_string exp);
+  Printf.printf "---- opts ----\n";
+  annot'd
+  |> List.iteri (fun i (a, _, c, e) ->
+         Printf.printf "[%2d] %s: %s { %s }\n" i (Act.to_string a)
+           (Ctx.to_string c) (Exp.to_string e));
   match List.find_opt (fun (act, gas, ctx, exp) -> act == Act.Skip) annot'd with
   | None -> annot'd
-  | Some (_, _, ctx, exp) ->
-    match Result.transition exp with
-    | `Err _ -> failwith "transition -> Err"
-    | `Val _ -> failwith "transition -> Val"
-    | `Exp exp -> step (Ctx.compose ctx exp)
+  | Some (_, _, ctx, exp) -> (
+      match Result.transition exp with
+      | `Err _ -> failwith "transition -> Err"
+      | `Val _ -> failwith "transition -> Val"
+      | `Exp exp -> step (Ctx.compose ctx exp))
 
 let () =
   let expr = Exp.Fun ("x", Add (Var "x", Var "x")) in
@@ -404,15 +403,24 @@ let () =
   let instr'ed = instr Any Skip All 0 exp in
   instr'ed |> Exp.to_string |> print_endline;
   let objs = instr'ed |> Ctx.decompose in
-  objs |> List.iter (fun (c, e) ->
-    Printf.printf "%s { %s }\n" (Ctx.to_string c) (Exp.to_string e));
-  objs |> List.iter (fun (c, e) ->
-    let (act, gas, c) = annot Skip All 0 c in
-    Printf.printf "act = %s, gas = %s, %s { %s }\n" (Act.to_string act) (Gas.to_string gas) (Ctx.to_string c) (Exp.to_string e))
+  objs
+  |> List.iter (fun (c, e) ->
+         Printf.printf "%s { %s }\n" (Ctx.to_string c) (Exp.to_string e));
+  objs
+  |> List.iter (fun (c, e) ->
+         let act, gas, c = annot Skip All 0 c in
+         Printf.printf "act = %s, gas = %s, %s { %s }\n" (Act.to_string act)
+           (Gas.to_string gas) (Ctx.to_string c) (Exp.to_string e))
 
 let () =
-  let body = Exp.Add (Add (Add (Int 1, Int 2), Int 3), Add (Add (Int 1, Int 2), Int 3)) in
-  let exp = Exp.Filter (Pat.Add (Add (Int 1, Int 2), Int 3), Act.Skip, All, body) in
-  let trunk = step exp |> List.map (fun (_, _, c, e) ->
-    Printf.sprintf "%s { %s }" (Ctx.to_string c) (Exp.to_string e)) |> String.concat "\n" in
-  Printf.printf "========\n%s\n---------\n" trunk
+  let body =
+    Exp.Add (Add (Add (Int 1, Int 2), Int 3), Add (Add (Int 1, Int 2), Int 3))
+  in
+  let exp = Exp.Filter (Pat.Add (Val, Val), Act.Skip, All, body) in
+  let trunk =
+    step exp
+    |> List.map (fun (_, _, c, e) ->
+           Printf.sprintf "%s { %s }" (Ctx.to_string c) (Exp.to_string e))
+    |> String.concat "\n"
+  in
+  Printf.printf "==== final opts ====\n%s\n---------\n" trunk
