@@ -1,2 +1,9 @@
 (library
- (name stepper))
+ (name stepper)
+ (modules evaluator lexer parser syntax)
+ (modes byte melange))
+
+(menhir
+ (modules parser))
+
+(ocamllex lexer)
