@@ -15,8 +15,10 @@ module App = {
           print_endline("source: " ++ source);
           let buf = Lexing.from_string(source);
           switch (Stepper.Parser.top(Stepper.Lexer.lex, buf)) {
+          | exception Stepper.Lexer.Error(message) =>
+            setResult(_ => "Lexing error: " ++ message)
           | exception Stepper.Parser.Error | None =>
-            setResult(_ => "error")
+            setResult(_ => "Syntax error")
           | Some(ast) =>
             let result = Stepper.Evaluator.eval(ast);
             setResult(_ => Stepper.Evaluator.Result.to_string(result))

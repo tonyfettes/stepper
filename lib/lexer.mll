@@ -1,5 +1,7 @@
 {
 open Parser
+
+exception Error of string
 }
 
 let white = [' ' '\t' '\n' '\r']+
@@ -18,8 +20,14 @@ rule lex =
   | "+" { PLUS }
   | "-" { MINUS }
   | "*" { TIMES }
-  | "filter" { FILTER }
+  | "eval" { EVAL }
+  | "hide" { HIDE }
+  | "pause" { PAUSE }
+  | "debug" { DEBUG }
+  | "$e" { DOLLAR_E }
+  | "$v" { DOLLAR_V }
   | "in" { IN }
   | ident { IDENT (Lexing.lexeme lexbuf) }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | eof { EOF }
+  | _ { raise (Error ("Unexpected char: " ^ Lexing.lexeme lexbuf)) }

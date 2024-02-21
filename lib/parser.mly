@@ -14,6 +14,12 @@ open Syntax
 %token FILTER
 %token IN
 %token EOF
+%token EVAL
+%token HIDE
+%token PAUSE
+%token DEBUG
+%token DOLLAR_E
+%token DOLLAR_V
 
 %left PLUS MINUS
 %left TIMES
@@ -36,4 +42,20 @@ exp:
   | e1 = exp; TIMES; e2 = exp { Exp.Mul (e1, e2) }
   | e1 = exp; LPAREN; e2 = exp; RPAREN { Exp.App (e1, e2) }
   | LPAREN; e = exp; RPAREN { e }
+  | EVAL; p = pat; IN; e = exp { Exp.Filter (p, Skip, All, e) }
+  | HIDE; p = pat; IN; e = exp { Exp.Filter (p, Skip, One, e) }
+  | PAUSE; p = pat; IN; e = exp { Exp.Filter (p, Pause, One, e) }
+  | DEBUG; p = pat; IN; e = exp { Exp.Filter (p, Pause, All, e) }
+  ;
+
+pat:
+  | DOLLAR_E { Pat.Any }
+  | DOLLAR_V { Pat.Val }
+  | i = INT { Pat.Int i }
+  | FUN; x = IDENT; THIN_ARROW; e = exp { Pat.Fun (x, e) }
+  | e1 = pat; PLUS; e2 = pat { Pat.Add (e1, e2) }
+  | e1 = pat; MINUS; e2 = pat { Pat.Sub (e1, e2) }
+  | e1 = pat; TIMES; e2 = pat { Pat.Mul (e1, e2) }
+  | e1 = pat; LPAREN; e2 = pat; RPAREN { Pat.App (e1, e2) }
+  | LPAREN; e = pat; RPAREN { e }
   ;
