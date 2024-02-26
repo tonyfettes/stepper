@@ -1,7 +1,7 @@
 module Act = struct
-  type t = Skip | Pause
+  type t = Eval | Pause
 
-  let to_string = function Skip -> "skip" | Pause -> "pause"
+  let to_string = function Eval -> "eval" | Pause -> "pause"
 end
 
 module Gas = struct

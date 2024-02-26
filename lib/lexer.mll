@@ -24,6 +24,13 @@ rule lex =
   | "hide" { HIDE }
   | "pause" { PAUSE }
   | "debug" { DEBUG }
+  | "filter" { FILTER }
+  | "one" { ONE }
+  | "all" { ALL }
+  | "do" { DO }
+  | "for" { FOR }
+  | "at" { AT }
+  | "in" { IN }
   | "$e" { DOLLAR_E }
   | "$v" { DOLLAR_V }
   | "in" { IN }

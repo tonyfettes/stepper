@@ -119,7 +119,7 @@ module Ctx = struct
 
   let rec to_string (ctx : t) =
     match ctx with
-    | Top -> "∘"
+    | Top -> "@"
     | Add_l (c, e) -> Printf.sprintf "(%s + %s)" (to_string c) (Exp.to_string e)
     | Add_r (e, c) -> Printf.sprintf "(%s + %s)" (Exp.to_string e) (to_string c)
     | Sub_l (c, e) -> Printf.sprintf "(%s - %s)" (to_string c) (Exp.to_string e)
@@ -278,8 +278,8 @@ let rec step (exp : Exp.t) =
            let act, gas, ctx = annot Pause One 0 ctx in
            (act, gas, ctx, exp))
   in
-  match List.find_opt (fun (act, _, _, _) -> act == Act.Skip) annot'd with
-  | None -> annot'd
+  match List.find_opt (fun (act, _, _, _) -> act == Act.Eval) annot'd with
+  | None -> annot'd |> List.map (fun (_, _, c, e) -> (c, e))
   | Some (_, _, ctx, exp) -> (
       match transition exp with
       | `Err _ -> failwith "transition -> Err"

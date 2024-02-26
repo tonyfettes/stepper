@@ -18,6 +18,11 @@ open Syntax
 %token HIDE
 %token PAUSE
 %token DEBUG
+%token DO
+%token FOR
+%token AT
+%token ONE
+%token ALL
 %token DOLLAR_E
 %token DOLLAR_V
 
@@ -33,6 +38,16 @@ top:
   | e = exp; EOF { Some e }
   ;
 
+act:
+  | EVAL { Act.Eval }
+  | PAUSE { Act.Pause }
+  ;
+
+gas:
+  | ONE { Gas.One }
+  | ALL { Gas.All }
+  ;
+
 exp:
   | i = INT { Exp.Int i }
   | x = IDENT  { Exp.Var x }
@@ -42,8 +57,10 @@ exp:
   | e1 = exp; TIMES; e2 = exp { Exp.Mul (e1, e2) }
   | e1 = exp; LPAREN; e2 = exp; RPAREN { Exp.App (e1, e2) }
   | LPAREN; e = exp; RPAREN { e }
-  | EVAL; p = pat; IN; e = exp { Exp.Filter (p, Skip, All, e) }
-  | HIDE; p = pat; IN; e = exp { Exp.Filter (p, Skip, One, e) }
+  | FILTER; p = pat; DO; a = act; FOR; g = gas; IN; e = exp { Exp.Filter (p, a, g, e) }
+  | DO; a = act; FOR; g = gas; AT; l = INT; IN; e = exp { Exp.Residue (a, g, l, e) }
+  | EVAL; p = pat; IN; e = exp { Exp.Filter (p, Eval, All, e) }
+  | HIDE; p = pat; IN; e = exp { Exp.Filter (p, Eval, One, e) }
   | PAUSE; p = pat; IN; e = exp { Exp.Filter (p, Pause, One, e) }
   | DEBUG; p = pat; IN; e = exp { Exp.Filter (p, Pause, All, e) }
   ;
