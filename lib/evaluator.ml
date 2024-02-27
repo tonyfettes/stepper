@@ -68,12 +68,12 @@ let rec transition (exp : Exp.t) =
   | Filter (p, a, g, e) -> (
       match transition e with
       | `Err (err, exp) -> `Err (err, exp)
-      | `Val value -> `Val value
+      | `Val value -> `Exp value
       | `Exp exp -> `Exp (Filter (p, a, g, exp)))
   | Residue (a, g, l, e) -> (
       match transition e with
       | `Err (err, exp) -> `Err (err, exp)
-      | `Val exp -> `Val exp
+      | `Val exp -> `Exp exp
       | `Exp exp -> `Exp (Residue (a, g, l, exp)))
 
 let rec eval (expr : Exp.t) =
@@ -147,22 +147,23 @@ module Ctx = struct
           @ List.map (fun (c, e_r') -> (Add_r (e_l, c), e_r')) c_r
         in
         if cs = [] then (Top, Add (e_l, e_r)) :: [] else cs
-        | Sub (e_l, e_r) ->
-          let c_l = decompose e_l in
-          let c_r = decompose e_r in
-          let cs =
-            List.map (fun (c, e_l') -> (Sub_l (c, e_r), e_l')) c_l
-            @ List.map (fun (c, e_r') -> (Sub_r (e_l, c), e_r')) c_r
-          in
-          if cs = [] then (Top, Sub (e_l, e_r)) :: [] else cs
-          | Mul (e_l, e_r) ->
-            let c_l = decompose e_l in
-            let c_r = decompose e_r in
-            let cs =
-              List.map (fun (c, e_l') -> (Mul_l (c, e_r), e_l')) c_l
-              @ List.map (fun (c, e_r') -> (Mul_r (e_l, c), e_r')) c_r
-            in
-            if cs = [] then (Top, Mul (e_l, e_r)) :: [] else cs
+    | Sub (e_l, e_r) ->
+        let c_l =
+          decompose e_l |> List.map @@ fun (c, e_l') -> (Sub_l (c, e_r), e_l')
+        in
+        let c_r =
+          decompose e_r |> List.map @@ fun (c, e_r') -> (Sub_r (e_l, c), e_r')
+        in
+        let cs = c_l @ c_r in
+        if cs = [] then (Top, Sub (e_l, e_r)) :: [] else cs
+    | Mul (e_l, e_r) ->
+        let c_l = decompose e_l in
+        let c_r = decompose e_r in
+        let cs =
+          List.map (fun (c, e_l') -> (Mul_l (c, e_r), e_l')) c_l
+          @ List.map (fun (c, e_r') -> (Mul_r (e_l, c), e_r')) c_r
+        in
+        if cs = [] then (Top, Mul (e_l, e_r)) :: [] else cs
     | App (e_l, e_r) ->
         let c_l = decompose e_l in
         let c_r = decompose e_r in
@@ -173,9 +174,15 @@ module Ctx = struct
         if cs = [] then (Top, App (e_l, e_r)) :: [] else cs
     | Fix (x, d) -> (Top, Exp.Fix (x, d)) :: []
     | Filter (p, a, g, e) ->
-        decompose e |> List.map (fun (c, e) -> (Filter (p, a, g, c), e))
+        let c =
+          decompose e |> List.map (fun (c, e) -> (Filter (p, a, g, c), e))
+        in
+        if c = [] then (Top, Filter (p, a, g, e)) :: [] else c
     | Residue (a, g, l, e) ->
-        decompose e |> List.map (fun (c, e) -> (Residue (a, g, l, c), e))
+        let c =
+          decompose e |> List.map (fun (c, e) -> (Residue (a, g, l, c), e))
+        in
+        if c = [] then (Top, Residue (a, g, l, e)) :: [] else c
 
   let rec compose (ctx : t) (exp : Exp.t) =
     match ctx with
@@ -274,14 +281,21 @@ let rec step (exp : Exp.t) =
   let decomposed = Ctx.decompose instr'd in
   let annot'd =
     decomposed
-    |> List.map (fun (ctx, exp) ->
-           let act, gas, ctx = annot Pause One 0 ctx in
-           (act, gas, ctx, exp))
+    |> List.map @@ fun (ctx, exp) ->
+       match exp with
+       | Syntax.Exp.Filter _ | Syntax.Exp.Residue _ -> (Act.Eval, ctx, exp)
+       | _ ->
+           let act, _, ctx = annot Pause One 0 ctx in
+           (act, ctx, exp)
   in
-  match List.find_opt (fun (act, _, _, _) -> act == Act.Eval) annot'd with
-  | None -> annot'd |> List.map (fun (_, _, c, e) -> (c, e))
-  | Some (_, _, ctx, exp) -> (
+  match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
+  | None -> (
+      print_endline "None";
+      match annot'd |> List.map (fun (_, c, e) -> (c, e)) with
+      | [] -> `Val exp
+      | exp -> `Exp exp)
+  | Some (_, ctx, exp) -> (
       match transition exp with
       | `Err _ -> failwith "transition -> Err"
-      | `Val _ -> failwith "transition -> Val"
+      | `Val exp -> `Val exp
       | `Exp exp -> step (Ctx.compose ctx exp))
