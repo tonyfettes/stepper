@@ -1,5 +1,6 @@
 (library
  (name stepper)
+ (package stepper)
  (wrapped false)
  (modules evaluator lexer parser syntax)
  (modes byte melange))

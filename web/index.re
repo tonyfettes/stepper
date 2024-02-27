@@ -30,6 +30,7 @@ module Input = {
   [@react.component]
   let make = (~value, ~onChange: string => unit) => {
     <input
+      className="w-full font-mono focus:outline-none"
       type_="text"
       value
       onChange={e => {
@@ -57,7 +58,7 @@ module History = {
   };
 };
 
-module App = {
+module Stepper = {
   // This sample forces an import of Belt.*, so that CI builds can ensure that
   // Melange has been installed correctly for JS bundlers to be able to find it.
   [@react.component]
@@ -106,6 +107,15 @@ module App = {
     </div>;
   };
 };
+
+module App = {
+  [@react.component]
+  let make = () => {
+    <div className="p-8">
+      <Stepper />
+    </div>;
+  };
+}
 
 switch (ReactDOM.querySelector("#root")) {
 | Some(root) => ReactDOM.render(<App />, root)

@@ -1,9 +1,10 @@
 {
   "scripts": {
     "build": "esy",
+    "build-css": "postcss ./web/styles.css -o ./_build/default/web/output/web/styles.css",
     "build:watch": "esy && esy build:watch",
-    "bundle": "webpack --mode production --entry ./_build/default/web/output/web/App.js",
-    "serve": "webpack serve --open --mode development --entry ./_build/default/web/output/web/App.js"
+    "bundle": "webpack --mode production --entry ./_build/default/web/output/web/index.js",
+    "serve": "webpack serve --open --mode development --entry ./_build/default/web/output/web/index.js"
   },
   "dependencies": {
     "esy": "0.7.2",
