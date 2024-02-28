@@ -73,8 +73,7 @@ jobs:
 
       - name: Build
         run: |
-          pnpm run bundle
-          cp -r public/* dist
+          pnpm run build
 
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v3
