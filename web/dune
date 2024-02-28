@@ -15,7 +15,7 @@
  ; Dune will look into those dependencies and generate rules with JavaScript targets
  ; for the modules in those libraries as well.
  ; Caveat: the libraries need to be specified with `(modes melange)`.
- (libraries reason-react stepper)
+ (libraries reason-react stepper melange.belt melange-webapi)
  ; By default, Dune will include all modules in the folder to the targets. With `modules` field
  ; we can tweak this default behavior by excluding `hello` from the list of targets of this stanza.
  ; See https://dune.readthedocs.io/en/stable/reference/predicate-language.html#predicate-language
@@ -26,10 +26,9 @@
   (pps melange.ppx reason-react-ppx))
  (module_systems es6))
 
-(melange.emit
- (target node)
- (alias node)
- (libraries stepper)
- (modules)
- (module_systems commonjs))
- 
+; (melange.emit
+;  (target node)
+;  (alias node)
+;  (libraries stepper)
+;  (modules)
+;  (module_systems commonjs))

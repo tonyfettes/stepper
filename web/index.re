@@ -1,10 +1,20 @@
 module Object = {
   [@react.component]
   let make = (~ctx, ~exp, ~onClick) => {
-    <div onClick={_ => onClick(ctx, exp)}>
-      {ctx->Evaluator.Ctx.to_string->React.string}
-      {exp->Syntax.Exp.to_string->React.string}
-    </div>;
+    switch (ctx->Stepper.Ctx.to_string |> String.split_on_char('@')) {
+    | [prefix, suffix] =>
+      <div className="whitespace-pre font-mono">
+        prefix->React.string
+        <span
+          className={"cursor-pointer text-blue-500"}
+          onClick={_ => onClick(ctx, exp)}
+        >
+          {exp->Syntax.Exp.to_string->React.string}
+        </span>
+        suffix->React.string
+      </div>;
+    | _ => failwith("Invalid context")    
+    }
   };
 };
 
@@ -34,7 +44,7 @@ module Input = {
       type_="text"
       value
       onChange={e => {
-        let source = e->ReactEvent.Form.target##value;
+        let source = e->React.Event.Form.target##value;
         onChange(source);
       }}
     />;
@@ -47,10 +57,7 @@ module History = {
     <div>
       {history
        ->Belt.List.map(((ctx, exp)) => {
-           <div>
-             {ctx->Evaluator.Ctx.to_string->React.string}
-             {exp->Syntax.Exp.to_string->React.string}
-           </div>
+           <Object ctx exp onClick={(_, _) => ()} />
          })
        ->Belt.List.toArray
        ->React.array}
@@ -75,17 +82,17 @@ module Stepper = {
         setResult(_ => `Err("Lexing error: " ++ message))
       | exception Parser.Error
       | None => setResult(_ => `Err("Syntax error"))
-      | Some(exp) => setResult(_ => Evaluator.step(exp))
+      | Some(exp) => setResult(_ => Stepper.step(exp))
       };
     };
 
     let onStep = (ctx, exp) => {
       setHistory(history => [(ctx, exp), ...history]);
-      switch (Evaluator.transition(exp)) {
+      switch (Stepper.transition(exp)) {
       | `Err(_, _) => ()
       | `Exp(exp)
       | `Val(exp) =>
-        let exp = Evaluator.Ctx.compose(ctx, exp);
+        let exp = Stepper.Ctx.compose(ctx, exp);
         let exp = exp->Syntax.Exp.to_string;
         updateResult(exp);
       };
@@ -111,14 +118,12 @@ module Stepper = {
 module App = {
   [@react.component]
   let make = () => {
-    <div className="p-8">
-      <Stepper />
-    </div>;
+    <div className="p-8"> <Stepper /> </div>;
   };
-}
+};
 
 switch (ReactDOM.querySelector("#root")) {
-| Some(root) => ReactDOM.render(<App />, root)
+| Some(root) => ReactDOM.Client.(createRoot(root)->render(<App />));
 | None =>
   Js.Console.error("Failed to start React: couldn't find the #root element")
 };
