@@ -1,11 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [],
+  content: [
+    "./web/**/*.re"
+  ],
   theme: {
     extend: {},
   },
   plugins: [],
-  purge: {
-    content: ["./src/**/*.html", "./src/**/*.re"],
-  },
 }

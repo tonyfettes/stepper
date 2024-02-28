@@ -117,7 +117,7 @@ module Ctx = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec to_string (ctx : t) =
+  let rec to_string ?(hide_filters = false) (ctx : t) =
     match ctx with
     | Top -> "@"
     | Add_l (c, e) -> Printf.sprintf "(%s + %s)" (to_string c) (Exp.to_string e)
@@ -129,11 +129,15 @@ module Ctx = struct
     | App_l (c, e) -> Printf.sprintf "(%s %s)" (to_string c) (Exp.to_string e)
     | App_r (e, c) -> Printf.sprintf "(%s %s)" (Exp.to_string e) (to_string c)
     | Filter (p, a, g, c) ->
-        Printf.sprintf "filter %s do %s for %s in\n%s" (Pat.to_string p)
-          (Act.to_string a) (Gas.to_string g) (to_string c)
+        if hide_filters then to_string c
+        else
+          Printf.sprintf "filter %s do %s for %s in\n%s" (Pat.to_string p)
+            (Act.to_string a) (Gas.to_string g) (to_string c)
     | Residue (a, g, l, c) ->
-        Printf.sprintf "do %s for %s at %d in\n%s" (Act.to_string a)
-          (Gas.to_string g) l (to_string c)
+        if hide_filters then to_string c
+        else
+          Printf.sprintf "do %s for %s at %d in\n%s" (Act.to_string a)
+            (Gas.to_string g) l (to_string c)
 
   let rec decompose (exp : Exp.t) =
     match exp with

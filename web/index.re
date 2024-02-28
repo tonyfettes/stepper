@@ -1,7 +1,7 @@
 module Object = {
   [@react.component]
   let make = (~ctx, ~exp, ~onClick) => {
-    switch (ctx->Stepper.Ctx.to_string |> String.split_on_char('@')) {
+    switch (ctx |> Stepper.Ctx.to_string(~hide_filters=true) |> String.split_on_char('@')) {
     | [prefix, suffix] =>
       <div className="whitespace-pre font-mono">
         prefix->React.string
