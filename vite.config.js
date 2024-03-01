@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import melangePlugin from "vite-plugin-melange";
 
 export default defineConfig({
+  base: './',
   plugins: [
     melangePlugin({
       emitDir: "web",
