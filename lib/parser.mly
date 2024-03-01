@@ -7,6 +7,7 @@ open Syntax
 %token LPAREN
 %token RPAREN
 %token FUN
+%token FIX
 %token THIN_ARROW
 %token PLUS
 %token MINUS
@@ -52,10 +53,11 @@ exp:
   | i = INT { Exp.Int i }
   | x = IDENT  { Exp.Var x }
   | FUN; x = IDENT; THIN_ARROW; e = exp { Exp.Fun (x, e) }
+  | FIX; x = IDENT; THIN_ARROW; e = exp { Exp.Fix (x, e) }
   | e1 = exp; PLUS; e2 = exp { Exp.Add (e1, e2) }
   | e1 = exp; MINUS; e2 = exp { Exp.Sub (e1, e2) }
   | e1 = exp; TIMES; e2 = exp { Exp.Mul (e1, e2) }
-  | e1 = exp; LPAREN; e2 = exp; RPAREN { Exp.App (e1, e2) }
+  | e1 = exp; e2 = exp { Exp.App (e1, e2) }
   | LPAREN; e = exp; RPAREN { e }
   | FILTER; p = pat; DO; a = act; FOR; g = gas; IN; e = exp { Exp.Filter (p, a, g, e) }
   | DO; a = act; FOR; g = gas; AT; l = INT; IN; e = exp { Exp.Residue (a, g, l, e) }
@@ -68,6 +70,7 @@ exp:
 pat:
   | DOLLAR_E { Pat.Any }
   | DOLLAR_V { Pat.Val }
+  | x = IDENT { Pat.Var x }
   | i = INT { Pat.Int i }
   | FUN; x = IDENT; THIN_ARROW; e = exp { Pat.Fun (x, e) }
   | e1 = pat; PLUS; e2 = pat { Pat.Add (e1, e2) }

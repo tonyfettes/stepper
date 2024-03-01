@@ -10,10 +10,18 @@ module Gas = struct
   let to_string = function One -> "one" | All -> "all"
 end
 
+let to_keyword (act : Act.t) (gas : Gas.t) =
+  match (act, gas) with
+  | Eval, One -> "hide"
+  | Eval, All -> "eval"
+  | Pause, One -> "pause"
+  | Pause, All -> "debug"
+
 module rec Pat : sig
   type t =
     | Any
     | Val
+    | Var of string
     | Int of int
     | Add of t * t
     | Sub of t * t
@@ -28,6 +36,7 @@ end = struct
   type t =
     | Any
     | Val
+    | Var of string
     | Int of int
     | Add of t * t
     | Sub of t * t
@@ -38,6 +47,7 @@ end = struct
   let rec to_string = function
     | Any -> "$e"
     | Val -> "$v"
+    | Var var -> var
     | Int int -> string_of_int int
     | Add (e_l, e_r) ->
         Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
@@ -52,6 +62,7 @@ end = struct
     match pat with
     | Any -> Any
     | Val -> Val
+    | Var pat_var -> if pat_var == var then (Exp.to_pat exp) else Var pat_var
     | Int int -> Int int
     | Add (p_l, p_r) -> Add (subst p_l var exp, subst p_r var exp)
     | Sub (p_l, p_r) -> Sub (subst p_l var exp, subst p_r var exp)
@@ -65,6 +76,7 @@ end = struct
     | Any, _ -> true
     | Val, Int _ | Val, Fun _ -> true
     | Val, _ -> false
+    | Var _, _ -> failwith "matches against Var"
     | Int n_p, Int n_e -> n_p == n_e
     | Int _, _ -> false
     | Add (p_l, p_r), Add (e_l, e_r) -> matches p_l e_l && matches p_r e_r
@@ -93,6 +105,7 @@ and Exp : sig
     | Residue of Act.t * Gas.t * int * t
 
   val to_string : t -> string
+  val to_pat : t -> Pat.t
   val eq : t -> t -> bool
   val subst : t -> string -> t -> t
 end = struct
@@ -126,6 +139,18 @@ end = struct
     | Residue (a, g, l, e) ->
         Printf.sprintf "(do %s for %s at %d in %s)" (Act.to_string a)
           (Gas.to_string g) l (to_string e)
+
+  let rec to_pat = function
+    | Var var -> Pat.Var var
+    | Int int -> Pat.Int int
+    | Add (e_l, e_r) -> Add (to_pat e_l, to_pat e_r)
+    | Sub (e_l, e_r) -> Sub (to_pat e_l, to_pat e_r)
+    | Mul (e_l, e_r) -> Mul (to_pat e_l, to_pat e_r)
+    | App (e_l, e_r) -> App (to_pat e_l, to_pat e_r)
+    | Fun (x, e) -> Fun (x, e)
+    | Fix (x, e) -> Fun (x, e)
+    | Filter (_, _, _, e) -> to_pat e
+    | Residue (_, _, _, e) -> to_pat e
 
   let rec eq (this : t) (that : t) =
     match (this, that) with
@@ -179,7 +204,7 @@ end = struct
     | Fun (fun_var, body) | Fix (fun_var, body) ->
         if fun_var == var then Fun (fun_var, body)
         else Fun (fun_var, subst body var expr)
-    | Filter (p, a, g, e) -> Filter (p, a, g, subst e var expr)
+    | Filter (p, a, g, e) -> Filter (Pat.subst p var expr, a, g, subst e var expr)
     | Residue (a, g, l, e) -> Residue (a, g, l, subst e var expr)
 end
 

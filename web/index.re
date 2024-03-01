@@ -1,38 +1,39 @@
 module Object = {
   [@react.component]
   let make = (~ctx, ~exp, ~onClick) => {
-    switch (ctx |> Stepper.Ctx.to_string(~hide_filters=true) |> String.split_on_char('@')) {
-    | [prefix, suffix] =>
-      <div className="whitespace-pre font-mono">
-        prefix->React.string
-        <span
-          className={"cursor-pointer text-blue-500"}
-          onClick={_ => onClick(ctx, exp)}
-        >
-          {exp->Syntax.Exp.to_string->React.string}
-        </span>
-        suffix->React.string
-      </div>;
-    | _ => failwith("Invalid context")    
-    }
+    Stepper.Ctx.to_string(ctx)
+    |> String.split_on_char('@')
+    |> (
+      fun
+      | [prefix, suffix] =>
+        <div className="whitespace-pre font-mono">
+          prefix->React.string
+          <span
+            className="cursor-pointer text-blue-500"
+            onClick={_ => onClick(ctx, exp)}>
+            {exp->Syntax.Exp.to_string->React.string}
+          </span>
+          suffix->React.string
+        </div>
+      | _ => failwith("Invalid context")
+    );
   };
 };
 
 module Result = {
   [@react.component]
   let make = (~value, ~onClick) => {
-    <div>
-      {switch (value) {
-       | `Err(value) => value->React.string
-       | `Val(value) =>
-         <div> {value->Syntax.Exp.to_string->React.string} </div>
-       | `Exp(value) =>
-         value
-         ->Belt.List.map(((ctx, exp)) => {<Object ctx exp onClick />})
-         ->Belt.List.toArray
-         ->React.array
-       }}
-    </div>;
+    switch (value) {
+    | `Err(value) =>
+      <div className="whitespace-pre font-mono text-red-500"> {value->React.string} </div>
+    | `Val(value) =>
+      <div className="whitespace-pre font-mono text-green-500"> {value->Syntax.Exp.to_string->React.string} </div>
+    | `Exp(value) =>
+      value
+      ->Belt.List.map(((ctx, exp)) => {<Object key={Js.Math.random()->string_of_float} ctx exp onClick />})
+      ->Belt.List.toArray
+      ->React.array
+    }
   };
 };
 
@@ -56,8 +57,8 @@ module History = {
   let make = (~history) => {
     <div>
       {history
-       ->Belt.List.map(((ctx, exp)) => {
-           <Object ctx exp onClick={(_, _) => ()} />
+       ->Belt.List.mapWithIndex((i, (ctx, exp)) => {
+           <Object key={i->Belt.Int.toString} ctx exp onClick={(_, _) => ()} />
          })
        ->Belt.List.toArray
        ->React.array}
@@ -89,7 +90,16 @@ module Stepper = {
     let onStep = (ctx, exp) => {
       setHistory(history => [(ctx, exp), ...history]);
       switch (Stepper.transition(exp)) {
-      | `Err(_, _) => ()
+      | `Err(err, exp) =>
+        let message = Printf.sprintf(
+              "%s: %s",
+              exp->Syntax.Exp.to_string,
+              err->Stepper.Err.to_string,
+            );
+        setResult(_ =>
+          `Err(message
+          )
+        )
       | `Exp(exp)
       | `Val(exp) =>
         let exp = Stepper.Ctx.compose(ctx, exp);
@@ -123,7 +133,7 @@ module App = {
 };
 
 switch (ReactDOM.querySelector("#root")) {
-| Some(root) => ReactDOM.Client.(createRoot(root)->render(<App />));
+| Some(root) => ReactDOM.Client.(createRoot(root)->render(<App />))
 | None =>
   Js.Console.error("Failed to start React: couldn't find the #root element")
 };

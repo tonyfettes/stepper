@@ -16,6 +16,7 @@ rule lex =
   | "(" { LPAREN }
   | ")" { RPAREN }
   | "fun" { FUN }
+  | "fix" { FIX }
   | "->" { THIN_ARROW }
   | "+" { PLUS }
   | "-" { MINUS }
