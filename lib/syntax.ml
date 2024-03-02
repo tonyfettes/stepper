@@ -23,6 +23,7 @@ module rec Pat : sig
     | Val
     | Var of string
     | Int of int
+    | Bool of bool
     | Add of t * t
     | Sub of t * t
     | Mul of t * t
@@ -38,6 +39,7 @@ end = struct
     | Val
     | Var of string
     | Int of int
+    | Bool of bool
     | Add of t * t
     | Sub of t * t
     | Mul of t * t
@@ -49,6 +51,7 @@ end = struct
     | Val -> "$v"
     | Var var -> var
     | Int int -> string_of_int int
+    | Bool bool -> string_of_bool bool
     | Add (e_l, e_r) ->
         Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
     | Sub (e_l, e_r) ->
@@ -56,14 +59,15 @@ end = struct
     | Mul (e_l, e_r) ->
         Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
     | App (e_l, e_r) -> Printf.sprintf "(%s %s)" (to_string e_l) (to_string e_r)
-    | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (Exp.to_string e)
+    | Fun (x, e) -> Printf.sprintf "(%s -> %s)" x (Exp.to_string e)
 
   let rec subst (pat : t) (var : string) (exp : Exp.t) =
     match pat with
     | Any -> Any
     | Val -> Val
-    | Var pat_var -> if pat_var == var then (Exp.to_pat exp) else Var pat_var
+    | Var pat_var -> if pat_var == var then Exp.to_pat exp else Var pat_var
     | Int int -> Int int
+    | Bool bool -> Bool bool
     | Add (p_l, p_r) -> Add (subst p_l var exp, subst p_r var exp)
     | Sub (p_l, p_r) -> Sub (subst p_l var exp, subst p_r var exp)
     | Mul (p_l, p_r) -> Mul (subst p_l var exp, subst p_r var exp)
@@ -79,6 +83,8 @@ end = struct
     | Var _, _ -> failwith "matches against Var"
     | Int n_p, Int n_e -> n_p == n_e
     | Int _, _ -> false
+    | Bool b_p, Bool b_e -> b_p == b_e
+    | Bool _, _ -> false
     | Add (p_l, p_r), Add (e_l, e_r) -> matches p_l e_l && matches p_r e_r
     | Add _, _ -> false
     | Sub (p_l, p_r), Sub (e_l, e_r) -> matches p_l e_l && matches p_r e_r
@@ -95,6 +101,7 @@ and Exp : sig
   type t =
     | Var of string
     | Int of int
+    | Bool of bool
     | Add of t * t
     | Sub of t * t
     | Mul of t * t
@@ -112,6 +119,7 @@ end = struct
   type t =
     | Var of string
     | Int of int
+    | Bool of bool
     | Add of t * t
     | Sub of t * t
     | Mul of t * t
@@ -124,6 +132,7 @@ end = struct
   let rec to_string = function
     | Var var -> var
     | Int int -> string_of_int int
+    | Bool bool -> string_of_bool bool
     | Add (e_l, e_r) ->
         Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
     | Sub (e_l, e_r) ->
@@ -131,7 +140,7 @@ end = struct
     | Mul (e_l, e_r) ->
         Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
     | App (e_l, e_r) -> Printf.sprintf "(%s %s)" (to_string e_l) (to_string e_r)
-    | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (to_string e)
+    | Fun (x, e) -> Printf.sprintf "(%s -> %s)" x (to_string e)
     | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (to_string e)
     | Filter (p, a, g, e) ->
         Printf.sprintf "(filter %s do %s for %s in %s)" (Pat.to_string p)
@@ -143,6 +152,7 @@ end = struct
   let rec to_pat = function
     | Var var -> Pat.Var var
     | Int int -> Pat.Int int
+    | Bool bool -> Pat.Bool bool
     | Add (e_l, e_r) -> Add (to_pat e_l, to_pat e_r)
     | Sub (e_l, e_r) -> Sub (to_pat e_l, to_pat e_r)
     | Mul (e_l, e_r) -> Mul (to_pat e_l, to_pat e_r)
@@ -158,6 +168,8 @@ end = struct
     | Var _, _ -> false
     | Int this, Int that -> this == that
     | Int _, _ -> false
+    | Bool this, Bool that -> this == that
+    | Bool _, _ -> false
     | Add (this_l, this_r), Add (that_l, that_r) ->
         eq this_l that_l && eq this_r that_r
     | Add _, _ -> false
@@ -185,6 +197,7 @@ end = struct
     match body with
     | Var body_var -> if body_var == var then expr else Var body_var
     | Int int -> Int int
+    | Bool bool -> Bool bool
     | Add (d1, d2) ->
         let d1 = subst d1 var expr in
         let d2 = subst d2 var expr in
@@ -204,7 +217,8 @@ end = struct
     | Fun (fun_var, body) | Fix (fun_var, body) ->
         if fun_var == var then Fun (fun_var, body)
         else Fun (fun_var, subst body var expr)
-    | Filter (p, a, g, e) -> Filter (Pat.subst p var expr, a, g, subst e var expr)
+    | Filter (p, a, g, e) ->
+        Filter (Pat.subst p var expr, a, g, subst e var expr)
     | Residue (a, g, l, e) -> Residue (a, g, l, subst e var expr)
 end
 
@@ -219,7 +233,7 @@ end = struct
   let to_string (value : t) =
     match value with
     | Int int -> string_of_int int
-    | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (Exp.to_string e)
+    | Fun (x, e) -> Printf.sprintf "(%s -> %s)" x (Exp.to_string e)
 
   let to_exp (value : t) =
     match value with Int int -> Exp.Int int | Fun (x, e) -> Fun (x, e)

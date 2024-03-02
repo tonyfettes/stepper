@@ -20,6 +20,7 @@ let rec transition (exp : Exp.t) =
   match exp with
   | Var var -> `Err (Err.Unbound_variable, Exp.Var var)
   | Int int -> `Val (Exp.Int int)
+  | Bool bool -> `Val (Exp.Bool bool)
   | Add (e_l, e_r) -> (
       match transition e_l with
       | `Err (err, exp) -> `Err (err, exp)
@@ -80,6 +81,7 @@ let rec eval (expr : Exp.t) =
   match expr with
   | Var var -> `Err (Err.Unbound_variable, Exp.Var var)
   | Int int -> `Val (Exp.Int int)
+  | Bool bool -> `Val (Exp.Bool bool)
   | Add (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | `Val (Int n_l), `Val (Int n_r) -> `Val (Int (n_l + n_r))
@@ -138,7 +140,7 @@ module Ctx = struct
   let rec decompose (exp : Exp.t) =
     match exp with
     | Var var -> (Top, Exp.Var var) :: []
-    | Int _ | Fun _ -> []
+    | Int _ | Bool _ | Fun _ -> []
     | Add (e_l, e_r) ->
         let c_l = decompose e_l in
         let c_r = decompose e_r in
@@ -211,6 +213,7 @@ let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
       match exp with
       | Var var -> wrap (Var var)
       | Int int -> Int int
+      | Bool bool -> Bool bool
       | Add (e_l, e_r) ->
           let e_l = instr pat act gas lvl e_l in
           let e_r = instr pat act gas lvl e_r in
@@ -290,10 +293,8 @@ let rec step (exp : Exp.t) =
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
   | None -> (
       match annot'd |> List.map (fun (_, c, e) -> (c, e)) with
-      | [] ->
-          `Val exp
-      | exp ->
-          `Exp exp)
+      | [] -> `Val exp
+      | exp -> `Exp exp)
   | Some (_, ctx, exp) -> (
       match transition exp with
       | `Err _ -> failwith "transition -> Err"

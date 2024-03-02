@@ -21,7 +21,7 @@
  ; See https://dune.readthedocs.io/en/stable/reference/predicate-language.html#predicate-language
  (modules :standard \)
  ; Uncomment the following to copy the generated JavaScript files inside the source tree
- ; (promote (until-clean))
+ (promote (until-clean))
  (preprocess
   (pps melange.ppx reason-react-ppx))
  (module_systems es6))

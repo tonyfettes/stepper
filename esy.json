@@ -1,28 +1,20 @@
 {
   "name": "mini-stepper",
   "dependencies": {
-    "ocaml": "5.1.x",
     "@opam/dune": ">= 3.8.0",
+    "@opam/melange": "3.0.0-51",
+    "@opam/melange-webapi": "*",
     "@opam/ocamlfind": "1.9.6",
     "@opam/reason": "*",
-    "@opam/melange": "3.0.0-51",
     "@opam/reason-react": "*",
     "@opam/reason-react-ppx": "*",
-    "@opam/melange-webapi": "*"
+    "ocaml": "5.1.x"
   },
-  "devDependencies": {
-    "@opam/ocaml-lsp-server": "1.16.2"
-  },
+  "devDependencies": { "@opam/ocaml-lsp-server": "1.16.2" },
   "esy": {
     "buildsInSource": "_build",
-    "build": [
-      "dune build @react @node"
-    ]
+    "build": [ "dune build @react @node" ]
   },
-  "scripts": {
-    "build:watch": "dune build @react @node -w"
-  },
-  "installConfig": {
-    "pnp": false
-  }
+  "scripts": { "build:watch": "dune build @react @node -w" },
+  "installConfig": { "pnp": false }
 }

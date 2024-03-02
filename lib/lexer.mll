@@ -18,9 +18,12 @@ rule lex =
   | "fun" { FUN }
   | "fix" { FIX }
   | "->" { THIN_ARROW }
+  | "|>" { PIPE }
+  | "<-" { APPLY }
   | "+" { PLUS }
   | "-" { MINUS }
   | "*" { TIMES }
+  | "=" { EQ }
   | "eval" { EVAL }
   | "hide" { HIDE }
   | "pause" { PAUSE }
@@ -34,7 +37,9 @@ rule lex =
   | "in" { IN }
   | "$e" { DOLLAR_E }
   | "$v" { DOLLAR_V }
-  | "in" { IN }
+  | "if" { IF }
+  | "then" { THEN }
+  | "else" { ELSE }
   | ident { IDENT (Lexing.lexeme lexbuf) }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | eof { EOF }
