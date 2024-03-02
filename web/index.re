@@ -43,29 +43,30 @@ module Result = {
   };
 };
 
-let ( |-> ) = x => f => {
-  f(x); x
+let (|->) = (x, f) => {
+  f(x);
+  x;
 };
 
 module CodeMirror = {
   [@react.component] [@mel.module "@uiw/react-codemirror"]
-  external make: (~value: string, ~onChange: (string, 'a) => unit) => React.element = "default";
+  external make:
+    (~value: string, ~onChange: (string, 'a) => unit) => React.element =
+    "default";
 };
 
-let setLocalStage: string => unit = [%mel.raw {|function (value) { window.localStorage.setItem('input', value); }|}];
+let setLocalStage: string => unit = [%mel.raw
+  {|function (value) { window.localStorage.setItem('input', value); }|}
+];
 
-let getLocalStage: unit => string = [%mel.raw {|function () { return window.localStorage.getItem('input') || ''; }|}];
+let getLocalStage: unit => string = [%mel.raw
+  {|function () { return window.localStorage.getItem('input') || ''; }|}
+];
 
 module Input = {
   [@react.component]
   let make = (~value, ~onChange: string => unit) => {
-    <CodeMirror
-      value={value}
-      onChange={(value, _) => {
-        setLocalStage(value);
-        onChange(value)
-      }}
-    />;
+    <CodeMirror value onChange={(value, _) => {onChange(value)}} />;
   };
 };
 
@@ -93,7 +94,7 @@ module Stepper = {
   // Melange has been installed correctly for JS bundlers to be able to find it.
   [@react.component]
   let make = () => {
-    let (input, setInput) = React.useState(() => getLocalStage());
+    let (input, setInput) = React.useState(() => "");
     let (history, setHistory) = React.useState(() => []);
     let (result, setResult) = React.useState(() => `Exp([]));
 
@@ -105,11 +106,32 @@ module Stepper = {
         setResult(_ => `Err("Lexing error: " ++ message))
       | exception Parser.Error
       | None => setResult(_ => `Err("Syntax error"))
-      | Some(exp) => setResult(_ => Stepper.step(exp))
+      | Some(exp) =>
+        let result =
+          switch (Stepper.step(exp)) {
+          | `Err(err, exp) =>
+            `Err(
+              Printf.sprintf(
+                "%s: %s",
+                exp->Syntax.Exp.to_string,
+                err->Stepper.Err.to_string,
+              ),
+            )
+          | `Val(exp) => `Val(exp)
+          | `Exp(exp) => `Exp(exp)
+          };
+        setResult(_ => result);
       };
     };
 
-    React.useEffect1(() => { updateResult(input); None }, [||]);
+    React.useEffect0(() => {
+      Dom.Storage.(localStorage |> getItem("stepper-input"))
+      ->Belt.Option.forEach(input => {
+          setInput(_ => input);
+          updateResult(input);
+        });
+      None;
+    });
 
     let onStep = (ctx, exp) => {
       setHistory(history => [(ctx, exp), ...history]);
@@ -134,6 +156,7 @@ module Stepper = {
       <Input
         value=input
         onChange={input => {
+          Dom.Storage.(localStorage |> setItem("stepper-input", input));
           setHistory(_ => []);
           setInput(_ => input);
           updateResult(input);
@@ -150,7 +173,17 @@ module Stepper = {
 module App = {
   [@react.component]
   let make = () => {
-    <div className="p-8"> <Stepper /> </div>;
+    <div className="p-8">
+      <h1>{"Mini Stepper"->React.string}</h1>
+      <p>
+        <ul className="gap-1">
+          <li><a href="https://hazel.org">{React.string("Home")}</a></li>
+          <li><a href="https://hazel.org/buil/dev">{"Try"->React.string}</a></li>
+          <li><a href="https://github.com/hazelgrove/hazel">{"GitHub"->React.string}</a></li>
+        </ul>
+      </p>
+      <Stepper />
+    </div>
   };
 };
 
