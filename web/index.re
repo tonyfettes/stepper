@@ -147,7 +147,7 @@ module Stepper = {
       | `Exp(exp)
       | `Val(exp) =>
         let exp = Stepper.Ctx.compose(ctx, exp);
-        let exp = exp->Syntax.Exp.to_string;
+        let exp = exp |> Syntax.Exp.to_string(~residue=true);
         updateResult(exp);
       };
     };
@@ -174,16 +174,22 @@ module App = {
   [@react.component]
   let make = () => {
     <div className="p-8">
-      <h1>{"Mini Stepper"->React.string}</h1>
+      <h1> "Mini Stepper"->React.string </h1>
       <p>
         <ul className="gap-1">
-          <li><a href="https://hazel.org">{React.string("Home")}</a></li>
-          <li><a href="https://hazel.org/buil/dev">{"Try"->React.string}</a></li>
-          <li><a href="https://github.com/hazelgrove/hazel">{"GitHub"->React.string}</a></li>
+          <li> <a href="https://hazel.org"> {React.string("Home")} </a> </li>
+          <li>
+            <a href="https://hazel.org/buil/dev"> "Try"->React.string </a>
+          </li>
+          <li>
+            <a href="https://github.com/hazelgrove/hazel">
+              "GitHub"->React.string
+            </a>
+          </li>
         </ul>
       </p>
       <Stepper />
-    </div>
+    </div>;
   };
 };
 

@@ -184,7 +184,9 @@ module Ctx = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec to_string ?(residue = false) = function
+  let rec to_string ?(residue = false) (ctx : t) =
+    let to_string = to_string ~residue in
+    match ctx with
     | Top -> "@"
     | Eq_l (c, e) -> Printf.sprintf "(%s = %s)" (to_string c) (Exp.to_string e)
     | Eq_r (e, c) -> Printf.sprintf "(%s = %s)" (Exp.to_string e) (to_string c)
@@ -435,7 +437,8 @@ let rec step (exp : Exp.t) =
     decomposed
     |> List.map @@ fun (ctx, exp) ->
        match exp with
-       | Syntax.Exp.Filter _ | Syntax.Exp.Residue _ -> (Act.Eval, ctx, exp)
+       | Syntax.Exp.Filter _
+       | Syntax.Exp.Residue _ -> (Act.Eval, ctx, exp)
        | _ ->
            let act, ctx = annot Pause 0 ctx in
            (act, ctx, exp)

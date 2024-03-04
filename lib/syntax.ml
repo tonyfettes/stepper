@@ -173,7 +173,9 @@ end = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec to_string ?(residue = false) = function
+  let rec to_string ?(residue = false) (exp : Exp.t) =
+    let to_string = to_string ~residue in
+    match exp with
     | Var var -> var
     | Int int -> string_of_int int
     | Bool bool -> string_of_bool bool
