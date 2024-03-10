@@ -13,8 +13,8 @@
   "devDependencies": { "@opam/ocaml-lsp-server": "1.16.2" },
   "esy": {
     "buildsInSource": "_build",
-    "build": [ "dune build @react @node" ]
+    "build": [ "dune build @react" ]
   },
-  "scripts": { "build:watch": "dune build @react @node -w" },
+  "scripts": { "build:watch": "dune build @react -w" },
   "installConfig": { "pnp": false }
 }
