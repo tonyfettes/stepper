@@ -36,6 +36,7 @@ module rec Pat : sig
     | If of t * t * t
 
   val to_string : t -> string
+  (* val eq : t -> t -> bool *)
   val subst : t -> string -> Exp.t -> t
   val matches : t -> Exp.t -> bool
 end = struct
@@ -124,9 +125,9 @@ end = struct
     | Mul _, _ -> false
     | Ap (p_l, p_r), Ap (e_l, e_r) -> matches p_l e_l && matches p_r e_r
     | Ap _, _ -> false
-    | Fun (x_p, e_p), Fun (x_e, e_e) -> x_p == x_e && Exp.eq e_p e_e
+    | Fun (x_p, e_p), Fun (x_e, e_e) -> x_p == x_e && (Exp.strip e_p) == (Exp.strip e_e)
     | Fun _, _ -> false
-    | Fun_any e_p, Fun (_, e_e) -> Exp.eq e_p e_e
+    | Fun_any e_p, Fun (_, e_e) -> (Exp.strip e_p) == (Exp.strip e_e)
     | Fun_any _, _ -> false
     | If (p_p, p_t, p_f), If (e_p, e_t, e_f) ->
         matches p_p e_p && matches p_t e_t && matches p_f e_f
@@ -153,7 +154,7 @@ and Exp : sig
 
   val to_string : ?residue:bool -> t -> string
   val to_pat : t -> Pat.t
-  val eq : t -> t -> bool
+  val strip : t -> t
   val subst : t -> string -> t -> t
 end = struct
   type t =
@@ -224,48 +225,11 @@ end = struct
     | Filter (_, _, _, e) -> to_pat e
     | Residue (_, _, _, e) -> to_pat e
 
-  let rec eq (this : t) (that : t) =
-    match (this, that) with
-    | Var this, Var that -> this == that
-    | Var _, _ -> false
-    | Int this, Int that -> this == that
-    | Int _, _ -> false
-    | Bool this, Bool that -> this == that
-    | Bool _, _ -> false
-    | Eq (this_l, this_r), Eq (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Eq _, _ -> false
-    | And (this_l, this_r), And (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | And _, _ -> false
-    | Or (this_l, this_r), Or (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Or _, _ -> false
-    | Add (this_l, this_r), Add (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Add _, _ -> false
-    | Sub (this_l, this_r), Sub (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Sub _, _ -> false
-    | Mul (this_l, this_r), Mul (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Mul _, _ -> false
-    | Ap (this_l, this_r), Ap (that_l, that_r) ->
-        eq this_l that_l && eq this_r that_r
-    | Ap _, _ -> false
-    | Fun (this_x, this_e), Fun (that_x, that_e) ->
-        this_x == that_x && eq this_e that_e
-    | Fun _, _ -> false
-    | Fix (this_x, this_e), Fix (that_x, that_e) ->
-        this_x == that_x && eq this_e that_e
-    | Fix _, _ -> false
-    | If (this_p, this_t, this_f), If (that_p, that_t, that_f) ->
-        eq this_p that_p && eq this_t that_t && eq this_f that_f
-    | If _, _ -> false
-    | ( (Filter (_, _, _, this) | Residue (_, _, _, this)),
-        (Filter (_, _, _, that) | Residue (_, _, _, that)) ) ->
-        eq this that
-    | (Filter _ | Residue _), _ -> false
+  let rec strip =
+    function
+    | Filter (_, _, _, e) -> strip e
+    | Residue (_, _, _, e) -> strip e
+    | e -> e
 
   let rec subst (body : t) (var : string) (expr : Exp.t) =
     match body with
