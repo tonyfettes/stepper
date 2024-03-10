@@ -1,8 +1,33 @@
 lib: [
   "_build/install/default/lib/stepper/META"
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/lexer.cmi" {"__private__/stepper/.public_cmi/lexer.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/lexer.cmt" {"__private__/stepper/.public_cmi/lexer.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/parser.cmi" {"__private__/stepper/.public_cmi/parser.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/parser.cmt" {"__private__/stepper/.public_cmi/parser.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/parser.cmti" {"__private__/stepper/.public_cmi/parser.cmti"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/stepper.cmi" {"__private__/stepper/.public_cmi/stepper.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/stepper.cmt" {"__private__/stepper/.public_cmi/stepper.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/syntax.cmi" {"__private__/stepper/.public_cmi/syntax.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/.public_cmi/syntax.cmt" {"__private__/stepper/.public_cmi/syntax.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/lexer.ml" {"__private__/stepper/lexer.ml"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/lexer.cmi" {"__private__/stepper/melange/.public_cmi_melange/lexer.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/lexer.cmt" {"__private__/stepper/melange/.public_cmi_melange/lexer.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/parser.cmi" {"__private__/stepper/melange/.public_cmi_melange/parser.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/parser.cmt" {"__private__/stepper/melange/.public_cmi_melange/parser.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/parser.cmti" {"__private__/stepper/melange/.public_cmi_melange/parser.cmti"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/stepper.cmi" {"__private__/stepper/melange/.public_cmi_melange/stepper.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/stepper.cmt" {"__private__/stepper/melange/.public_cmi_melange/stepper.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/syntax.cmi" {"__private__/stepper/melange/.public_cmi_melange/syntax.cmi"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/.public_cmi_melange/syntax.cmt" {"__private__/stepper/melange/.public_cmi_melange/syntax.cmt"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/lexer.cmj" {"__private__/stepper/melange/lexer.cmj"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/parser.cmj" {"__private__/stepper/melange/parser.cmj"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/stepper.cmj" {"__private__/stepper/melange/stepper.cmj"}
+  "_build/install/default/lib/stepper/__private__/stepper/melange/syntax.cmj" {"__private__/stepper/melange/syntax.cmj"}
+  "_build/install/default/lib/stepper/__private__/stepper/parser.ml" {"__private__/stepper/parser.ml"}
+  "_build/install/default/lib/stepper/__private__/stepper/parser.mli" {"__private__/stepper/parser.mli"}
+  "_build/install/default/lib/stepper/__private__/stepper/stepper.cma" {"__private__/stepper/stepper.cma"}
+  "_build/install/default/lib/stepper/__private__/stepper/stepper.ml" {"__private__/stepper/stepper.ml"}
+  "_build/install/default/lib/stepper/__private__/stepper/syntax.ml" {"__private__/stepper/syntax.ml"}
   "_build/install/default/lib/stepper/dune-package"
   "_build/install/default/lib/stepper/opam"
-]
-bin: [
-  "_build/install/default/bin/stepper"
 ]
