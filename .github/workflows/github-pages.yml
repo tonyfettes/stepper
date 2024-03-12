@@ -75,6 +75,16 @@ jobs:
         run: |
           pnpm run build
 
+      - name: Commit
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          if [ -n "$(git status --porcelain)" ]; then
+            echo git commit -a -m "build: bump artifacts [skip ci]"
+            echo git push origin HEAD:main
+          fi
+
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v3
         with:
