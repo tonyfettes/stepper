@@ -1,4 +1,4 @@
 [@react.component]
 let make = (~value, ~onChange: string => unit) => {
-  <CodeMirror value onChange={(value, _) => {onChange(value)}} />;
+  <p><CodeMirror value onChange={(value, _) => {onChange(value)}} /></p>;
 };

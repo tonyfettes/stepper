@@ -1,8 +1,13 @@
 [@react.component]
-let make = (~value: bool, ~onChange: bool => unit) => {
-  <input
-    type_="checkbox"
-    checked=value
-    onChange={e => React.Event.Form.(e->target)##checked->onChange}
-  />;
+let make = (~id: string, ~name: string, ~value: bool, ~onChange: bool => unit, ~children: React.element) => {
+  <div className="flex gap-2 items-center">
+    <input
+      type_="checkbox"
+      id=id
+      name=name
+      checked=value
+      onChange={e => React.Event.Form.(e->target)##checked->onChange}
+    />
+    <label htmlFor=id> children </label>
+  </div>;
 };

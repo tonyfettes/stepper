@@ -62,7 +62,7 @@ let make = () => {
     };
   };
 
-  <div>
+  <>
     <Settings
       value=settings
       onChange={settings => setSettings(_ => settings)}
@@ -81,5 +81,5 @@ let make = () => {
     <History settings history={history->List.rev} />
     <hr />
     <Result settings value=result onClick=onStep />
-  </div>;
+  </>;
 };

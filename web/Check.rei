@@ -1,2 +1,2 @@
 [@react.component]
-let make: (~value: bool, ~onChange: bool => unit) => React.element;
+let make: (~id: string, ~name: string, ~value: bool, ~onChange: bool => unit, ~children: React.element) => React.element;

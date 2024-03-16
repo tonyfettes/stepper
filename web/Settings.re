@@ -4,13 +4,13 @@ let default = {showResidue: false};
 
 [@react.component]
 let make = (~value: t, ~onChange: t => unit): React.element => {
-  <div>
-    <label>
-      {React.string("Show residue")}
-      <Check
-        value={value.showResidue}
-        onChange={showResidue => onChange({showResidue: showResidue})}
-      />
-    </label>
-  </div>;
+  <p>
+    <Check
+      id="showResidue"
+      name="Show Residue (Do Statement)"
+      value={value.showResidue}
+      onChange={showResidue => onChange({showResidue: showResidue})}>
+      "Show Residue (Do Statement)"->React.string
+    </Check>
+  </p>;
 };
