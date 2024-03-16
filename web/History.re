@@ -1,11 +1,16 @@
 [@react.component]
-let make = (~history) => {
-  <p>
-    {history
-     ->Belt.List.mapWithIndex((i, (ctx, exp)) => {
-         <Object key={i->Belt.Int.toString} ctx exp onClick={(_, _) => ()} />
-       })
-     ->Belt.List.toArray
-     ->React.array}
-  </p>;
+let make = (~settings: Settings.t, ~history) => {
+  let history =
+    history
+    ->Belt.List.mapWithIndex((i, (context, expr)) =>
+        <Object
+          settings
+          key={i->Belt.Int.toString}
+          context
+          expr
+          onClick={(_, _) => ()}
+        />
+      )
+    ->Belt.List.toArray;
+  <p> history->React.array </p>;
 };

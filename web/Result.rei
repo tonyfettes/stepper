@@ -1,11 +1,12 @@
 [@react.component]
 let make:
   (
+    ~settings: Settings.t,
     ~value: [<
-              | `Err(string)
-              | `Exp(list((Stepper.Ctx.t, Syntax.Exp.t)))
-              | `Val(Syntax.Exp.t)
+              | `Error(string)
+              | `Expr(list((Stepper.Context.t, Stepper.Expr.t)))
+              | `Value(Stepper.Value.t)
             ],
-    ~onClick: (Stepper.Ctx.t, Syntax.Exp.t) => unit
+    ~onClick: (Stepper.Context.t, Stepper.Expr.t) => unit
   ) =>
   React.element;

@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import melangePlugin from "vite-plugin-melange";
-import react from "@vitejs/plugin-react";
+import preact from "@preact/preset-vite";
 
 export default defineConfig({
   base: './',
@@ -13,10 +13,16 @@ export default defineConfig({
         watchCommand: "esy -- dune build --watch @react",
       })
     },
-    react({
+    preact({
       include: /\.(js|jsx|ts|tsx|re|rei|ml|mli)$/
     }),
   ],
+  resolve: {
+    alias: {
+      react: 'preact/compat',
+      'react-dom': 'preact/compat',
+    },
+  },
   server: {
     watch: {
       usePolling: true,

@@ -1,8 +1,9 @@
 [@react.component]
 let make:
   (
-    ~ctx: Stepper.Ctx.t,
-    ~exp: Syntax.Exp.t,
-    ~onClick: (Stepper.Ctx.t, Syntax.Exp.t) => unit
+    ~settings: Settings.t,
+    ~context: Stepper.Context.t,
+    ~expr: Stepper.Expr.t,
+    ~onClick: (Stepper.Context.t, Stepper.Expr.t) => unit
   ) =>
   React.element;

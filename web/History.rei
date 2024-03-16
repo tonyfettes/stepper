@@ -1,2 +1,5 @@
 [@react.component]
-let make: (~history: list((Stepper.Ctx.t, Syntax.Exp.t))) => React.element;
+let make:
+  (
+    ~settings: Settings.t,
+    ~history: list((Stepper.Context.t, Stepper.Expr.t))) => React.element;

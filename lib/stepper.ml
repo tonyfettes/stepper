@@ -1,186 +1,191 @@
-open Syntax
+module Lexer = Lexer
 
-module Err = struct
-  type t = Unbound_variable | Mismatched_type
+module Parser = Parser
+
+include Syntax
+
+let parse (source : string) : Expr.t option =
+  let buffer = Lexing.from_string source in
+  Parser.top Lexer.lex buffer
+
+module Error = struct
+  type t = Unbound_variable | Mismatched_type | Not_a_value
 
   let to_string = function
     | Unbound_variable -> "Unbound variable"
     | Mismatched_type -> "Mismatch type"
+    | Not_a_value -> "Not a value"
 end
 
-module Result = struct
-  let to_string = function
-    | `Val exp -> Printf.sprintf "Val %s" (Exp.to_string exp)
-    | `Exp exp -> Printf.sprintf "Exp %s" (Exp.to_string exp)
-    | `Err (err, exp) ->
-        Printf.sprintf "Err %s: %s" (Err.to_string err) (Exp.to_string exp)
-end
-
-let rec transition (exp : Exp.t) =
+let rec transition (exp : Expr.t) =
   match exp with
-  | Var var -> `Err (Err.Unbound_variable, Exp.Var var)
-  | Int int -> `Val (Exp.Int int)
-  | Bool bool -> `Val (Exp.Bool bool)
+  | Var var -> `Error (Error.Unbound_variable, Expr.Var var)
+  | Int int -> `Value (Value.Int int)
+  | Bool bool -> `Value (Value.Bool bool)
   | Eq (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Exp.Eq (e_l, e_r))
-      | `Val (Int n_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Expr.Eq (e_l, e_r))
+      | `Value (Int n_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Eq (e_l, e_r))
-          | `Val (Int n_r) -> `Exp (Bool (n_l = n_r))
-          | `Val e_r -> `Err (Mismatched_type, Eq (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, Eq (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Eq (e_l, e_r))
+          | `Value (Int n_r) -> `Expr (Bool (n_l = n_r))
+          | `Value e_r -> `Error (Mismatched_type, Eq (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, Eq (Value.to_expr e_l, e_r)))
   | And (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (And (e_l, e_r))
-      | `Val (Bool b_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (And (e_l, e_r))
+      | `Value (Bool b_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (And (e_l, e_r))
-          | `Val (Bool b_r) -> `Exp (Bool (b_l && b_r))
-          | `Val e_r -> `Err (Mismatched_type, And (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, And (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (And (e_l, e_r))
+          | `Value (Bool b_r) -> `Expr (Bool (b_l && b_r))
+          | `Value e_r -> `Error (Mismatched_type, And (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, And (Value.to_expr e_l, e_r)))
   | Or (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Or (e_l, e_r))
-      | `Val (Bool b_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Or (e_l, e_r))
+      | `Value (Bool b_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Or (e_l, e_r))
-          | `Val (Bool b_r) -> `Exp (Bool (b_l || b_r))
-          | `Val e_r -> `Err (Mismatched_type, Or (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, Or (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Or (e_l, e_r))
+          | `Value (Bool b_r) -> `Expr (Bool (b_l || b_r))
+          | `Value e_r -> `Error (Mismatched_type, Or (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, Or (Value.to_expr e_l, e_r)))
   | Add (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Exp.Add (e_l, e_r))
-      | `Val (Int n_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Expr.Add (e_l, e_r))
+      | `Value (Int n_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Add (e_l, e_r))
-          | `Val (Int n_r) -> `Exp (Int (n_l + n_r))
-          | `Val e_r -> `Err (Mismatched_type, Add (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, Add (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Add (e_l, e_r))
+          | `Value (Int n_r) -> `Expr (Int (n_l + n_r))
+          | `Value e_r -> `Error (Mismatched_type, Add (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, Add (Value.to_expr e_l, e_r)))
   | Sub (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Sub (e_l, e_r))
-      | `Val (Int n_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Sub (e_l, e_r))
+      | `Value (Int n_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Sub (e_l, e_r))
-          | `Val (Int n_r) -> `Exp (Int (n_l - n_r))
-          | `Val e_r -> `Err (Mismatched_type, Sub (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, Sub (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Sub (e_l, e_r))
+          | `Value (Int n_r) -> `Expr (Int (n_l - n_r))
+          | `Value e_r -> `Error (Mismatched_type, Sub (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, Sub (Value.to_expr e_l, e_r)))
   | Mul (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Mul (e_l, e_r))
-      | `Val (Int n_l) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Mul (e_l, e_r))
+      | `Value (Int n_l) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Mul (e_l, e_r))
-          | `Val (Int n_r) -> `Exp (Int (n_l * n_r))
-          | `Val e_r -> `Err (Mismatched_type, Mul (e_l, e_r)))
-      | `Val e_l -> `Err (Mismatched_type, Mul (e_l, e_r)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Mul (e_l, e_r))
+          | `Value (Int n_r) -> `Expr (Int (n_l * n_r))
+          | `Value e_r -> `Error (Mismatched_type, Mul (e_l, Value.to_expr e_r)))
+      | `Value e_l -> `Error (Mismatched_type, Mul (Value.to_expr e_l, e_r)))
   | Ap (e_l, e_r) -> (
       match transition e_l with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e_l -> `Exp (Ap (e_l, e_r))
-      | `Val (Fun (x, e_b)) -> (
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e_l -> `Expr (Ap (e_l, e_r))
+      | `Value (Fun (x, e_b)) -> (
           match transition e_r with
-          | `Err (err, exp) -> `Err (err, exp)
-          | `Exp e_r -> `Exp (Ap (e_l, e_r))
-          | `Val e_r -> `Exp (Exp.subst e_b x e_r))
-      | `Val e_l -> `Err (Mismatched_type, Add (e_l, e_r)))
-  | Fun (x, d) -> `Val (Fun (x, d))
-  | Fix (x, e) -> `Exp Exp.(subst e x (Fix (x, e)))
+          | `Error (err, exp) -> `Error (err, exp)
+          | `Expr e_r -> `Expr (Ap (e_l, e_r))
+          | `Value e_r -> `Expr (Expr.subst e_b x e_r))
+      | `Value e_l -> `Error (Mismatched_type, Ap (Value.to_expr e_l, e_r)))
+  | Fun (x, e) -> `Value (Value.Fun (x, e))
+  | Fix (x, Fun (y, e)) -> `Expr Expr.(subst e x (Fun (y, Fix (x, e))))
+  | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match transition e with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Exp e -> `Exp (If (e, t, f))
-      | `Val (Bool true) -> `Exp t
-      | `Val (Bool false) -> `Exp f
-      | `Val _ -> `Err (Mismatched_type, If (e, t, f)))
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Expr e -> `Expr (If (e, t, f))
+      | `Value (Bool true) -> `Expr t
+      | `Value (Bool false) -> `Expr f
+      | `Value _ -> `Error (Mismatched_type, If (e, t, f)))
   | Filter (p, a, g, e) -> (
       match transition e with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Val value -> `Exp value
-      | `Exp exp -> `Exp (Filter (p, a, g, exp)))
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Value value -> `Expr (Value.to_expr value)
+      | `Expr exp -> `Expr (Filter (p, a, g, exp)))
   | Residue (a, g, l, e) -> (
       match transition e with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Val exp -> `Exp exp
-      | `Exp exp -> `Exp (Residue (a, g, l, exp)))
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Value exp -> `Expr (Value.to_expr exp)
+      | `Expr exp -> `Expr (Residue (a, g, l, exp)))
 
-let rec eval (expr : Exp.t) =
+let rec eval (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Value of Value.t ] =
   match expr with
-  | Var var -> `Err (Err.Unbound_variable, Exp.Var var)
-  | Int int -> `Val (Exp.Int int)
-  | Bool bool -> `Val (Exp.Bool bool)
+  | Var var -> `Error (Error.Unbound_variable, Expr.Var var)
+  | Int int -> `Value (Value.Int int)
+  | Bool bool -> `Value (Bool bool)
   | Eq (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Int n_l), `Val (Int n_r) -> `Val (Bool (n_l = n_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Value.Int n_l), `Value (Int n_r) -> `Value (Bool (n_l = n_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | And (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Bool b_l), `Val (Bool b_r) -> `Val (Bool (b_l && b_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Bool b_l), `Value (Bool b_r) -> `Value (Bool (b_l && b_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | Or (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Bool b_l), `Val (Bool b_r) -> `Val (Bool (b_l || b_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Bool b_l), `Value (Bool b_r) -> `Value (Bool (b_l || b_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | Add (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Int n_l), `Val (Int n_r) -> `Val (Int (n_l + n_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Int n_l), `Value (Int n_r) -> `Value (Int (n_l + n_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | Sub (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Int n_l), `Val (Int n_r) -> `Val (Int (n_l - n_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Int n_l), `Value (Int n_r) -> `Value (Int (n_l - n_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | Mul (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Val (Int n_l), `Val (Int n_r) -> `Val (Int (n_l * n_r))
-      | _, _ -> `Err (Mismatched_type, expr))
+      | `Value (Int n_l), `Value (Int n_r) -> `Value (Int (n_l * n_r))
+      | _, _ -> `Error (Mismatched_type, expr))
   | Ap (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
-      | `Err (err, exp), _ -> `Err (err, exp)
-      | `Val _, `Err (err, exp) -> `Err (err, exp)
-      | `Val (Fun (x, e)), `Val v_r -> eval (Exp.subst e x v_r)
-      | `Val _, `Val _ -> `Err (Mismatched_type, expr))
-  | Fun (x, e) -> `Val (Fun (x, e))
-  | Fix (x, e) -> `Val (Fun (x, Exp.subst e x e))
+      | `Error (err, exp), _ -> `Error (err, exp)
+      | `Value _, `Error (err, exp) -> `Error (err, exp)
+      | `Value (Fun (x, e)), `Value v_r -> eval (Expr.subst e x v_r)
+      | `Value _, `Value _ -> `Error (Mismatched_type, expr))
+  | Fun (x, e) -> `Value (Fun (x, e))
+  | Fix (x, Fun (y, e)) ->
+    let v = Value.Fun (y, Fix (x, e)) in
+    `Value (Fun (x, (Expr.subst e x v)))
+  | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match eval e with
-      | `Val (Bool true) -> eval t
-      | `Val (Bool false) -> eval f
-      | `Val _ -> `Err (Mismatched_type, expr)
-      | `Err (err, exp) -> `Err (err, exp))
+      | `Value (Bool true) -> eval t
+      | `Value (Bool false) -> eval f
+      | `Value _ -> `Error (Mismatched_type, expr)
+      | `Error (err, exp) -> `Error (err, exp))
   | Filter (_, _, _, e) -> eval e
   | Residue (_, _, _, e) -> eval e
 
-module Ctx = struct
+module Context = struct
   type t =
     | Top
-    | Eq_l of t * Exp.t
-    | Eq_r of Exp.t * t
-    | And_l of t * Exp.t
-    | And_r of Exp.t * t
-    | Or_l of t * Exp.t
-    | Or_r of Exp.t * t
-    | Add_l of t * Exp.t
-    | Add_r of Exp.t * t
-    | Sub_l of t * Exp.t
-    | Sub_r of Exp.t * t
-    | Mul_l of t * Exp.t
-    | Mul_r of Exp.t * t
-    | Ap_l of t * Exp.t
-    | Ap_r of Exp.t * t
-    | If of t * Exp.t * Exp.t
+    | Eq_l of t * Expr.t
+    | Eq_r of Expr.t * t
+    | And_l of t * Expr.t
+    | And_r of Expr.t * t
+    | Or_l of t * Expr.t
+    | Or_r of Expr.t * t
+    | Add_l of t * Expr.t
+    | Add_r of Expr.t * t
+    | Sub_l of t * Expr.t
+    | Sub_r of Expr.t * t
+    | Mul_l of t * Expr.t
+    | Mul_r of Expr.t * t
+    | Ap_l of t * Expr.t
+    | Ap_r of Expr.t * t
+    | If of t * Expr.t * Expr.t
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
@@ -188,25 +193,25 @@ module Ctx = struct
     let to_string = to_string ~residue in
     match ctx with
     | Top -> "@"
-    | Eq_l (c, e) -> Printf.sprintf "(%s = %s)" (to_string c) (Exp.to_string e)
-    | Eq_r (e, c) -> Printf.sprintf "(%s = %s)" (Exp.to_string e) (to_string c)
+    | Eq_l (c, e) -> Printf.sprintf "(%s = %s)" (to_string c) (Expr.to_string e)
+    | Eq_r (e, c) -> Printf.sprintf "(%s = %s)" (Expr.to_string e) (to_string c)
     | And_l (c, e) ->
-        Printf.sprintf "(%s && %s)" (to_string c) (Exp.to_string e)
+        Printf.sprintf "(%s && %s)" (to_string c) (Expr.to_string e)
     | And_r (e, c) ->
-        Printf.sprintf "(%s && %s)" (Exp.to_string e) (to_string c)
-    | Or_l (c, e) -> Printf.sprintf "(%s || %s)" (to_string c) (Exp.to_string e)
-    | Or_r (e, c) -> Printf.sprintf "(%s || %s)" (Exp.to_string e) (to_string c)
-    | Add_l (c, e) -> Printf.sprintf "(%s + %s)" (to_string c) (Exp.to_string e)
-    | Add_r (e, c) -> Printf.sprintf "(%s + %s)" (Exp.to_string e) (to_string c)
-    | Sub_l (c, e) -> Printf.sprintf "(%s - %s)" (to_string c) (Exp.to_string e)
-    | Sub_r (e, c) -> Printf.sprintf "(%s - %s)" (Exp.to_string e) (to_string c)
-    | Mul_l (c, e) -> Printf.sprintf "(%s * %s)" (to_string c) (Exp.to_string e)
-    | Mul_r (e, c) -> Printf.sprintf "(%s * %s)" (Exp.to_string e) (to_string c)
-    | Ap_l (c, e) -> Printf.sprintf "%s(%s)" (to_string c) (Exp.to_string e)
-    | Ap_r (e, c) -> Printf.sprintf "%s(%s)" (Exp.to_string e) (to_string c)
+        Printf.sprintf "(%s && %s)" (Expr.to_string e) (to_string c)
+    | Or_l (c, e) -> Printf.sprintf "(%s || %s)" (to_string c) (Expr.to_string e)
+    | Or_r (e, c) -> Printf.sprintf "(%s || %s)" (Expr.to_string e) (to_string c)
+    | Add_l (c, e) -> Printf.sprintf "(%s + %s)" (to_string c) (Expr.to_string e)
+    | Add_r (e, c) -> Printf.sprintf "(%s + %s)" (Expr.to_string e) (to_string c)
+    | Sub_l (c, e) -> Printf.sprintf "(%s - %s)" (to_string c) (Expr.to_string e)
+    | Sub_r (e, c) -> Printf.sprintf "(%s - %s)" (Expr.to_string e) (to_string c)
+    | Mul_l (c, e) -> Printf.sprintf "(%s * %s)" (to_string c) (Expr.to_string e)
+    | Mul_r (e, c) -> Printf.sprintf "(%s * %s)" (Expr.to_string e) (to_string c)
+    | Ap_l (c, e) -> Printf.sprintf "%s(%s)" (to_string c) (Expr.to_string e)
+    | Ap_r (e, c) -> Printf.sprintf "%s(%s)" (Expr.to_string e) (to_string c)
     | If (c, t, f) ->
-        Printf.sprintf "(if %s then %s else %s)" (to_string c) (Exp.to_string t)
-          (Exp.to_string f)
+        Printf.sprintf "(if %s then %s else %s)" (to_string c) (Expr.to_string t)
+          (Expr.to_string f)
     | Filter (p, a, g, c) ->
         let keyword = Syntax.to_keyword a g in
         Printf.sprintf "(%s %s in %s)" keyword (Pat.to_string p)
@@ -217,9 +222,9 @@ module Ctx = struct
           (Gas.to_string g) l (to_string c)
         else to_string c
 
-  let rec decompose (exp : Exp.t) =
+  let rec decompose (exp : Expr.t) =
     match exp with
-    | Var var -> (Top, Exp.Var var) :: []
+    | Var var -> (Top, Expr.Var var) :: []
     | Int _ | Bool _ | Fun _ -> []
     | Eq (e_l, e_r) ->
         let c_l = decompose e_l in
@@ -278,7 +283,7 @@ module Ctx = struct
           @ List.map (fun (c, e_r') -> (Ap_r (e_l, c), e_r')) c_r
         in
         if cs = [] then (Top, Ap (e_l, e_r)) :: [] else cs
-    | Fix (x, d) -> (Top, Exp.Fix (x, d)) :: []
+    | Fix (x, d) -> (Top, Expr.Fix (x, d)) :: []
     | If (e, t, f) ->
         let c = decompose e |> List.map (fun (c, e) -> (If (c, t, f), e)) in
         if c = [] then (Top, If (e, t, f)) :: [] else c
@@ -293,7 +298,7 @@ module Ctx = struct
         in
         if c = [] then (Top, Residue (a, g, l, e)) :: [] else c
 
-  let rec compose (ctx : t) (exp : Exp.t) =
+  let rec compose (ctx : t) (exp : Expr.t) =
     match ctx with
     | Top -> exp
     | Eq_l (c_l, e_r) -> Eq (compose c_l exp, e_r)
@@ -316,14 +321,14 @@ module Ctx = struct
 end
 
 let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
-    (exp : Exp.t) =
+    (exp : Expr.t) =
   let wrap exp =
-    if Pat.matches pat exp then Exp.Residue (act, gas, lvl, exp) else exp
+    if Pat.matches pat exp then Expr.Residue (act, gas, lvl, exp) else exp
   in
   match transition exp with
-  | `Err _ -> exp
-  | `Val _ -> exp
-  | `Exp _ -> (
+  | `Error _ -> exp
+  | `Value _ -> exp
+  | `Expr _ -> (
       match exp with
       | Var var -> wrap (Var var)
       | Int int -> Int int
@@ -370,7 +375,7 @@ let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
           let e = instr pat act gas lvl e in
           Residue (a, g, l, e))
 
-let rec annot (act : Act.t) (lvl : int) (ctx : Ctx.t) =
+let rec annot (act : Act.t) (lvl : int) (ctx : Context.t) =
   match ctx with
   | Top -> (act, ctx)
   | Eq_l (c, e) ->
@@ -430,26 +435,29 @@ let rec annot (act : Act.t) (lvl : int) (ctx : Ctx.t) =
         let act, c = annot act lvl c in
         (act, Residue (a, All, l, c))
 
-let rec step (exp : Exp.t) =
-  let instr'd = instr Any Pause One 0 exp in
-  let decomposed = Ctx.decompose instr'd in
+let rec step (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Expr of (Context.t * Expr.t) list | `Value of Value.t] =
+  let instr'd = instr Any Pause One 0 expr in
+  let decomposed = Context.decompose instr'd in
   let annot'd =
     decomposed
-    |> List.map @@ fun (ctx, exp) ->
-       match exp with
-       | Syntax.Exp.Filter _
-       | Syntax.Exp.Residue _ -> (Act.Eval, ctx, exp)
+    |> List.map @@ fun (ctx, expr) ->
+       match expr with
+       | Syntax.Expr.Filter _
+       | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
        | _ ->
            let act, ctx = annot Pause 0 ctx in
-           (act, ctx, exp)
+           (act, ctx, expr)
   in
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
   | None -> (
       match annot'd |> List.map (fun (_, c, e) -> (c, e)) with
-      | [] -> `Val exp
-      | exp -> `Exp exp)
-  | Some (_, ctx, exp) -> (
-      match transition exp with
-      | `Err (err, exp) -> `Err (err, exp)
-      | `Val exp -> `Val exp
-      | `Exp exp -> step (Ctx.compose ctx exp))
+      | [] ->
+        (match (Expr.to_value expr) with
+        | None -> `Error (Error.Not_a_value, expr)
+        | Some value -> `Value value)
+      | expr -> `Expr expr)
+  | Some (_, ctx, expr) -> (
+      match transition expr with
+      | `Error (err, exp) -> `Error (err, exp)
+      | `Value value -> `Value value
+      | `Expr exp -> step (Context.compose ctx exp))

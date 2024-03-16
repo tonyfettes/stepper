@@ -1,8 +1,6 @@
 (library
  (name stepper)
  (package stepper)
- (wrapped false)
- (modules stepper lexer parser syntax)
  (modes byte melange))
 
 (menhir
