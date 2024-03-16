@@ -8,6 +8,7 @@
     "@opam/reason": "*",
     "@opam/reason-react": "*",
     "@opam/reason-react-ppx": "*",
+    "@opam/pprint": "*",
     "ocaml": "5.1.x"
   },
   "devDependencies": { "@opam/ocaml-lsp-server": "1.16.2" },
