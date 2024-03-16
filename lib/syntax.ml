@@ -151,9 +151,10 @@ and Expr : sig
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  val to_string : ?residue:bool -> t -> string
+  val to_string : ?residue:bool -> ?prec:int -> t -> string
   val to_pat : t -> Pat.t
   val to_value : t -> Value.t option
+  val take_prec : t -> int
   val strip : t -> t
   val subst : t -> string -> Value.t -> t
 end = struct
@@ -174,39 +175,44 @@ end = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec to_string ?(residue = false) (exp : Expr.t) =
-    let to_string = to_string ~residue in
-    match exp with
-    | Var var -> var
-    | Int int -> string_of_int int
-    | Bool bool -> string_of_bool bool
-    | Eq (e_l, e_r) ->
-        Printf.sprintf "(%s == %s)" (to_string e_l) (to_string e_r)
-    | And (e_l, e_r) ->
-        Printf.sprintf "(%s && %s)" (to_string e_l) (to_string e_r)
-    | Or (e_l, e_r) ->
-        Printf.sprintf "(%s || %s)" (to_string e_l) (to_string e_r)
-    | Add (e_l, e_r) ->
-        Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
-    | Sub (e_l, e_r) ->
-        Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
-    | Mul (e_l, e_r) ->
-        Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
-    | Ap (e_l, e_r) -> Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
-    | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (to_string e)
-    | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (to_string e)
-    | If (p, t, f) ->
-        Printf.sprintf "(if %s then %s else %s)" (to_string p) (to_string t)
-          (to_string f)
-    | Filter (p, a, g, e) ->
-      let keyword = to_keyword a g in
-          Printf.sprintf "(%s %s in %s)" keyword (Pat.to_string p)
-            (to_string e)
-    | Residue (a, g, l, e) ->
-        if residue then
-          Printf.sprintf "(do %s for %s at %d in %s)" (Act.to_string a)
-            (Gas.to_string g) l (to_string e)
-        else to_string e
+  let rec to_string ?(residue = false) ?(prec = 0) (expr : Expr.t) =
+    let to_string ?(residue = residue) ?(prec = Expr.take_prec expr) = to_string ~residue ~prec in
+    let string =
+      match expr with
+      | Var var -> var
+      | Int int -> string_of_int int
+      | Bool bool -> string_of_bool bool
+      | Eq (e_l, e_r) ->
+          Printf.sprintf "%s == %s" (to_string e_l) (to_string e_r)
+      | And (e_l, e_r) ->
+          Printf.sprintf "%s && %s" (to_string e_l) (to_string e_r)
+      | Or (e_l, e_r) ->
+          Printf.sprintf "%s || %s" (to_string e_l) (to_string e_r)
+      | Add (e_l, e_r) ->
+          Printf.sprintf "%s + %s" (to_string e_l) (to_string e_r)
+      | Sub (e_l, e_r) ->
+          Printf.sprintf "%s - %s" (to_string e_l) (to_string e_r)
+      | Mul (e_l, e_r) ->
+          Printf.sprintf "%s * %s" (to_string e_l) (to_string e_r)
+      | Ap (e_l, e_r) ->
+        Printf.printf "Ap";
+        Printf.sprintf "%s(%s)" (to_string e_l) (to_string ~prec:0 e_r)
+      | Fun (x, e) -> Printf.sprintf "fun %s -> %s" x (to_string e)
+      | Fix (x, e) -> Printf.sprintf "fix %s -> %s" x (to_string e)
+      | If (p, t, f) ->
+          Printf.sprintf "if %s then %s else %s" (to_string p) (to_string t)
+            (to_string f)
+      | Filter (p, a, g, e) ->
+        let keyword = to_keyword a g in
+            Printf.sprintf "%s %s in %s" keyword (Pat.to_string p)
+              (to_string e)
+      | Residue (a, g, l, e) ->
+          if residue then
+            let keyword = to_keyword a g in
+            Printf.sprintf "%s #%d in %s" keyword l (to_string e)
+          else to_string e
+    in
+    if (Expr.take_prec expr) < prec then "(" ^ string ^ ")" else string
 
   let rec to_pat = function
     | Var var -> Pat.Var var
@@ -242,6 +248,23 @@ end = struct
     | If _
     | Filter _
     | Residue _ -> None
+
+  let take_prec = function
+    | Var _
+    | Int _
+    | Bool _ -> 7
+    | Eq _ -> 1
+    | And _ -> 3
+    | Or _ -> 2
+    | Add _ -> 4
+    | Sub _ -> 4
+    | Mul _ -> 5
+    | Ap _ -> 6
+    | Fun _ -> 0
+    | Fix _ -> 0
+    | If _ -> 0
+    | Filter _ -> 0
+    | Residue _ -> 0
 
   let rec strip =
     function

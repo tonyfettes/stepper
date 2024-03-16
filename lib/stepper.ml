@@ -189,38 +189,57 @@ module Context = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec to_string ?(residue = false) (ctx : t) =
-    let to_string = to_string ~residue in
-    match ctx with
-    | Top -> "@"
-    | Eq_l (c, e) -> Printf.sprintf "(%s = %s)" (to_string c) (Expr.to_string e)
-    | Eq_r (e, c) -> Printf.sprintf "(%s = %s)" (Expr.to_string e) (to_string c)
-    | And_l (c, e) ->
-        Printf.sprintf "(%s && %s)" (to_string c) (Expr.to_string e)
-    | And_r (e, c) ->
-        Printf.sprintf "(%s && %s)" (Expr.to_string e) (to_string c)
-    | Or_l (c, e) -> Printf.sprintf "(%s || %s)" (to_string c) (Expr.to_string e)
-    | Or_r (e, c) -> Printf.sprintf "(%s || %s)" (Expr.to_string e) (to_string c)
-    | Add_l (c, e) -> Printf.sprintf "(%s + %s)" (to_string c) (Expr.to_string e)
-    | Add_r (e, c) -> Printf.sprintf "(%s + %s)" (Expr.to_string e) (to_string c)
-    | Sub_l (c, e) -> Printf.sprintf "(%s - %s)" (to_string c) (Expr.to_string e)
-    | Sub_r (e, c) -> Printf.sprintf "(%s - %s)" (Expr.to_string e) (to_string c)
-    | Mul_l (c, e) -> Printf.sprintf "(%s * %s)" (to_string c) (Expr.to_string e)
-    | Mul_r (e, c) -> Printf.sprintf "(%s * %s)" (Expr.to_string e) (to_string c)
-    | Ap_l (c, e) -> Printf.sprintf "%s(%s)" (to_string c) (Expr.to_string e)
-    | Ap_r (e, c) -> Printf.sprintf "%s(%s)" (Expr.to_string e) (to_string c)
-    | If (c, t, f) ->
-        Printf.sprintf "(if %s then %s else %s)" (to_string c) (Expr.to_string t)
-          (Expr.to_string f)
-    | Filter (p, a, g, c) ->
-        let keyword = Syntax.to_keyword a g in
-        Printf.sprintf "(%s %s in %s)" keyword (Pat.to_string p)
-          (to_string c)
-    | Residue (a, g, l, c) ->
-        if residue then
-        Printf.sprintf "(do %s for %s at %d in %s)" (Act.to_string a)
-          (Gas.to_string g) l (to_string c)
-        else to_string c
+  let take_prec = function
+    | Top -> 7
+    | Eq_l _ | Eq_r _ -> 1
+    | And_l _ | And_r _ -> 3
+    | Or_l _ | Or_r _ -> 2
+    | Add_l _ | Add_r _ -> 4
+    | Sub_l _ | Sub_r _ -> 4
+    | Mul_l _ | Mul_r _ -> 5
+    | Ap_l _ | Ap_r _ -> 6
+    | If _ -> 0
+    | Filter _ -> 0
+    | Residue _ -> 0
+
+  let rec to_string ?(residue = false) ?(prec = 0) (context : t) =
+    let to_string ?(residue = residue) ?(prec = take_prec context) = to_string ~residue ~prec in
+    let expr_to_string ?(residue = residue) ?(prec = take_prec context) = Expr.to_string ~residue ~prec in
+    let string =
+      match context with
+      | Top -> "@"
+      | Eq_l (c, e) -> Printf.sprintf "%s = %s" (to_string c) (expr_to_string e)
+      | Eq_r (e, c) -> Printf.sprintf "%s = %s" (expr_to_string e) (to_string c)
+      | And_l (c, e) ->
+          Printf.sprintf "%s && %s" (to_string c) (expr_to_string e)
+      | And_r (e, c) ->
+          Printf.sprintf "%s && %s" (expr_to_string e) (to_string c)
+      | Or_l (c, e) -> Printf.sprintf "%s || %s" (to_string c) (expr_to_string e)
+      | Or_r (e, c) -> Printf.sprintf "%s || %s" (expr_to_string e) (to_string c)
+      | Add_l (c, e) ->
+        Printf.printf "Add\n";
+        Printf.sprintf "%s + %s" (to_string c) (expr_to_string e)
+      | Add_r (e, c) -> Printf.sprintf "%s + %s" (expr_to_string e) (to_string c)
+      | Sub_l (c, e) -> Printf.sprintf "%s - %s" (to_string c) (expr_to_string e)
+      | Sub_r (e, c) -> Printf.sprintf "%s - %s" (expr_to_string e) (to_string c)
+      | Mul_l (c, e) -> Printf.sprintf "%s * %s" (to_string c) (expr_to_string e)
+      | Mul_r (e, c) -> Printf.sprintf "%s * %s" (expr_to_string e) (to_string c)
+      | Ap_l (c, e) -> Printf.sprintf "%s(%s)" (to_string c) (expr_to_string ~prec:0 e)
+      | Ap_r (e, c) -> Printf.sprintf "%s(%s)" (expr_to_string e) (to_string ~prec:0 c)
+      | If (c, t, f) ->
+          Printf.sprintf "if %s then %s else %s" (to_string c) (expr_to_string t)
+            (expr_to_string f)
+      | Filter (p, a, g, c) ->
+          let keyword = Syntax.to_keyword a g in
+          Printf.sprintf "%s %s in %s" keyword (Pat.to_string p)
+            (to_string c)
+      | Residue (a, g, l, c) ->
+          if residue then
+            let keyword = to_keyword a g in
+            Printf.sprintf "%s #%d in %s" keyword l (to_string c)
+          else to_string c
+    in
+    if (take_prec context) < prec then "(" ^ string ^ ")" else string
 
   let rec decompose (exp : Expr.t) =
     match exp with
