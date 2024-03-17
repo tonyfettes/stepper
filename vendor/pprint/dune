@@ -1,0 +1,11 @@
+(env
+  (dev     (flags :standard -w @A-4))
+  (release (flags :standard)))
+
+(library
+  (name pprint)
+  (package stepper)
+  (wrapped false)
+  (modes byte native melange))
+
+(documentation)

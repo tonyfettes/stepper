@@ -6,20 +6,15 @@ let make =
       ~expr: Stepper.Expr.t,
       ~onClick,
     ) => {
-  let segments =
-    context
-    |> Stepper.Context.to_string(~residue=settings.showResidue)
-    |> String.split_on_char('@');
+  let buffer = Buffer.create(128);
+  context
+  |> Stepper.Context.pretty_print(~residue=settings.showResidue)
+  |> PPrint.ToBuffer.pretty(1.0, 64, buffer);
   let onClick = _ => onClick(context, expr);
-  Js.log(settings);
   let expr = Stepper.Expr.to_string(~residue=settings.showResidue, expr);
-  Js.log("expr: " ++ expr);
-  Js.log(context |> Stepper.Context.to_string(~residue=settings.showResidue));
-  Js.log(segments);
+  let segments = buffer |> Buffer.contents |> String.split_on_char('@');
   switch (segments) {
   | [prefix, suffix] =>
-    Js.log("prefix: " ++ prefix);
-    Js.log("suffix: " ++ suffix);
     <div className="whitespace-pre font-mono">
       prefix->React.string
       <span className="cursor-pointer text-blue-500" onClick>
@@ -27,7 +22,6 @@ let make =
       </span>
       suffix->React.string
     </div>
-  | _ =>    
-    failwith("Invalid context")
+  | _ => failwith("Invalid context")
   };
 };

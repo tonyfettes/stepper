@@ -1,7 +1,5 @@
 module Lexer = Lexer
-
 module Parser = Parser
-
 include Syntax
 
 let parse (source : string) : Expr.t option =
@@ -42,7 +40,8 @@ let rec transition (exp : Expr.t) =
           | `Error (err, exp) -> `Error (err, exp)
           | `Expr e_r -> `Expr (And (e_l, e_r))
           | `Value (Bool b_r) -> `Expr (Bool (b_l && b_r))
-          | `Value e_r -> `Error (Mismatched_type, And (e_l, Value.to_expr e_r)))
+          | `Value e_r -> `Error (Mismatched_type, And (e_l, Value.to_expr e_r))
+          )
       | `Value e_l -> `Error (Mismatched_type, And (Value.to_expr e_l, e_r)))
   | Or (e_l, e_r) -> (
       match transition e_l with
@@ -64,7 +63,8 @@ let rec transition (exp : Expr.t) =
           | `Error (err, exp) -> `Error (err, exp)
           | `Expr e_r -> `Expr (Add (e_l, e_r))
           | `Value (Int n_r) -> `Expr (Int (n_l + n_r))
-          | `Value e_r -> `Error (Mismatched_type, Add (e_l, Value.to_expr e_r)))
+          | `Value e_r -> `Error (Mismatched_type, Add (e_l, Value.to_expr e_r))
+          )
       | `Value e_l -> `Error (Mismatched_type, Add (Value.to_expr e_l, e_r)))
   | Sub (e_l, e_r) -> (
       match transition e_l with
@@ -75,7 +75,8 @@ let rec transition (exp : Expr.t) =
           | `Error (err, exp) -> `Error (err, exp)
           | `Expr e_r -> `Expr (Sub (e_l, e_r))
           | `Value (Int n_r) -> `Expr (Int (n_l - n_r))
-          | `Value e_r -> `Error (Mismatched_type, Sub (e_l, Value.to_expr e_r)))
+          | `Value e_r -> `Error (Mismatched_type, Sub (e_l, Value.to_expr e_r))
+          )
       | `Value e_l -> `Error (Mismatched_type, Sub (Value.to_expr e_l, e_r)))
   | Mul (e_l, e_r) -> (
       match transition e_l with
@@ -86,7 +87,8 @@ let rec transition (exp : Expr.t) =
           | `Error (err, exp) -> `Error (err, exp)
           | `Expr e_r -> `Expr (Mul (e_l, e_r))
           | `Value (Int n_r) -> `Expr (Int (n_l * n_r))
-          | `Value e_r -> `Error (Mismatched_type, Mul (e_l, Value.to_expr e_r)))
+          | `Value e_r -> `Error (Mismatched_type, Mul (e_l, Value.to_expr e_r))
+          )
       | `Value e_l -> `Error (Mismatched_type, Mul (Value.to_expr e_l, e_r)))
   | Ap (e_l, e_r) -> (
       match transition e_l with
@@ -119,7 +121,8 @@ let rec transition (exp : Expr.t) =
       | `Value exp -> `Expr (Value.to_expr exp)
       | `Expr exp -> `Expr (Residue (a, g, l, exp)))
 
-let rec eval (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Value of Value.t ] =
+let rec eval (expr : Expr.t) :
+    [> `Error of Error.t * Expr.t | `Value of Value.t ] =
   match expr with
   | Var var -> `Error (Error.Unbound_variable, Expr.Var var)
   | Int int -> `Value (Value.Int int)
@@ -156,8 +159,8 @@ let rec eval (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Value of Value.t
       | `Value _, `Value _ -> `Error (Mismatched_type, expr))
   | Fun (x, e) -> `Value (Fun (x, e))
   | Fix (x, Fun (y, e)) ->
-    let v = Value.Fun (y, Fix (x, e)) in
-    `Value (Fun (x, (Expr.subst e x v)))
+      let v = Value.Fun (y, Fix (x, e)) in
+      `Value (Fun (x, Expr.subst e x v))
   | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match eval e with
@@ -190,21 +193,90 @@ module Context = struct
     | Residue of Act.t * Gas.t * int * t
 
   let take_prec = function
-    | Top -> 7
-    | Eq_l _ | Eq_r _ -> 1
-    | And_l _ | And_r _ -> 3
-    | Or_l _ | Or_r _ -> 2
-    | Add_l _ | Add_r _ -> 4
-    | Sub_l _ | Sub_r _ -> 4
-    | Mul_l _ | Mul_r _ -> 5
-    | Ap_l _ | Ap_r _ -> 6
+    | Top -> 14
+    | Eq_l _ | Eq_r _ -> 2
+    | And_l _ | And_r _ -> 6
+    | Or_l _ | Or_r _ -> 4
+    | Add_l _ | Add_r _ -> 8
+    | Sub_l _ | Sub_r _ -> 8
+    | Mul_l _ | Mul_r _ -> 10
+    | Ap_l _ | Ap_r _ -> 12
     | If _ -> 0
     | Filter _ -> 0
     | Residue _ -> 0
 
+  let rec pretty_print ?(residue = false) ?(prec = 0) (context : t) =
+    let pretty_print ?(residue = residue) ?(prec = take_prec context) =
+      pretty_print ~residue ~prec
+    in
+    let expr_pretty_print ?(residue = residue) ?(prec = take_prec context) =
+      Expr.pretty_print ~residue ~prec
+    in
+    let taken_prec = take_prec context in
+    let document =
+      match context with
+      | Top -> PPrint.(parens (string "@"))
+      | Eq_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "=" ^/^ expr_pretty_print e)
+      | Eq_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "=" ^/^ pretty_print c)
+      | And_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "&&" ^/^ expr_pretty_print e)
+      | And_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "&&" ^/^ pretty_print c)
+      | Or_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "||" ^/^ expr_pretty_print e)
+      | Or_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "||" ^/^ pretty_print c)
+      | Add_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "+" ^/^ expr_pretty_print ~prec:(taken_prec - 1) e)
+      | Add_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "+" ^/^ pretty_print ~prec:(taken_prec - 1) c)
+      | Sub_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "-" ^/^ expr_pretty_print e)
+      | Sub_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "-" ^/^ pretty_print c)
+      | Mul_l (c, e) ->
+          PPrint.(pretty_print c ^/^ string "*" ^/^ expr_pretty_print e)
+      | Mul_r (e, c) ->
+          PPrint.(expr_pretty_print e ^/^ string "*" ^/^ pretty_print c)
+      | Ap_l (c, e) ->
+          PPrint.(
+            pretty_print c ^/^ PPrint.parens (expr_pretty_print ~prec:0 e))
+      | Ap_r (e, c) ->
+          PPrint.(
+            PPrint.parens (expr_pretty_print e)
+            ^/^ PPrint.parens (pretty_print ~prec:0 c))
+      | If (c, t, f) ->
+          PPrint.(
+            group (string "if" ^/^ pretty_print c ^/^ string "then")
+            ^^ nest 2 (hardline ^^ expr_pretty_print t)
+            ^^ hardline ^^ string "else"
+            ^^ nest 2 (hardline ^^ expr_pretty_print f))
+      | Filter (p, a, g, c) ->
+          PPrint.(
+            string (Syntax.to_keyword a g)
+            ^/^ string (Pat.to_string p)
+            ^/^ string "in" ^/^ pretty_print c)
+      | Residue (a, g, l, c) ->
+          if residue then
+            PPrint.(
+              string (to_keyword a g)
+              ^/^ string "#"
+              ^/^ string (string_of_int l)
+              ^/^ string "in" ^/^ pretty_print c)
+          else pretty_print ~prec c
+    in
+    if take_prec context < prec then PPrint.(parens (nest 1 document))
+    else PPrint.group document
+
   let rec to_string ?(residue = false) ?(prec = 0) (context : t) =
-    let to_string ?(residue = residue) ?(prec = take_prec context) = to_string ~residue ~prec in
-    let expr_to_string ?(residue = residue) ?(prec = take_prec context) = Expr.to_string ~residue ~prec in
+    let to_string ?(residue = residue) ?(prec = take_prec context) =
+      to_string ~residue ~prec
+    in
+    let expr_to_string ?(residue = residue) ?(prec = take_prec context) =
+      Expr.to_string ~residue ~prec
+    in
     let string =
       match context with
       | Top -> "@"
@@ -214,32 +286,40 @@ module Context = struct
           Printf.sprintf "%s && %s" (to_string c) (expr_to_string e)
       | And_r (e, c) ->
           Printf.sprintf "%s && %s" (expr_to_string e) (to_string c)
-      | Or_l (c, e) -> Printf.sprintf "%s || %s" (to_string c) (expr_to_string e)
-      | Or_r (e, c) -> Printf.sprintf "%s || %s" (expr_to_string e) (to_string c)
+      | Or_l (c, e) ->
+          Printf.sprintf "%s || %s" (to_string c) (expr_to_string e)
+      | Or_r (e, c) ->
+          Printf.sprintf "%s || %s" (expr_to_string e) (to_string c)
       | Add_l (c, e) ->
-        Printf.printf "Add\n";
-        Printf.sprintf "%s + %s" (to_string c) (expr_to_string e)
-      | Add_r (e, c) -> Printf.sprintf "%s + %s" (expr_to_string e) (to_string c)
-      | Sub_l (c, e) -> Printf.sprintf "%s - %s" (to_string c) (expr_to_string e)
-      | Sub_r (e, c) -> Printf.sprintf "%s - %s" (expr_to_string e) (to_string c)
-      | Mul_l (c, e) -> Printf.sprintf "%s * %s" (to_string c) (expr_to_string e)
-      | Mul_r (e, c) -> Printf.sprintf "%s * %s" (expr_to_string e) (to_string c)
-      | Ap_l (c, e) -> Printf.sprintf "%s(%s)" (to_string c) (expr_to_string ~prec:0 e)
-      | Ap_r (e, c) -> Printf.sprintf "%s(%s)" (expr_to_string e) (to_string ~prec:0 c)
+          Printf.printf "Add\n";
+          Printf.sprintf "%s + %s" (to_string c) (expr_to_string e)
+      | Add_r (e, c) ->
+          Printf.sprintf "%s + %s" (expr_to_string e) (to_string c)
+      | Sub_l (c, e) ->
+          Printf.sprintf "%s - %s" (to_string c) (expr_to_string e)
+      | Sub_r (e, c) ->
+          Printf.sprintf "%s - %s" (expr_to_string e) (to_string c)
+      | Mul_l (c, e) ->
+          Printf.sprintf "%s * %s" (to_string c) (expr_to_string e)
+      | Mul_r (e, c) ->
+          Printf.sprintf "%s * %s" (expr_to_string e) (to_string c)
+      | Ap_l (c, e) ->
+          Printf.sprintf "%s(%s)" (to_string c) (expr_to_string ~prec:0 e)
+      | Ap_r (e, c) ->
+          Printf.sprintf "%s(%s)" (expr_to_string e) (to_string ~prec:0 c)
       | If (c, t, f) ->
-          Printf.sprintf "if %s then %s else %s" (to_string c) (expr_to_string t)
-            (expr_to_string f)
+          Printf.sprintf "if %s then %s else %s" (to_string c)
+            (expr_to_string t) (expr_to_string f)
       | Filter (p, a, g, c) ->
           let keyword = Syntax.to_keyword a g in
-          Printf.sprintf "%s %s in %s" keyword (Pat.to_string p)
-            (to_string c)
+          Printf.sprintf "%s %s in %s" keyword (Pat.to_string p) (to_string c)
       | Residue (a, g, l, c) ->
           if residue then
             let keyword = to_keyword a g in
             Printf.sprintf "%s #%d in %s" keyword l (to_string c)
-          else to_string c
+          else to_string ~prec c
     in
-    if (take_prec context) < prec then "(" ^ string ^ ")" else string
+    if take_prec context < prec then "(" ^ string ^ ")" else string
 
   let rec decompose (exp : Expr.t) =
     match exp with
@@ -454,15 +534,17 @@ let rec annot (act : Act.t) (lvl : int) (ctx : Context.t) =
         let act, c = annot act lvl c in
         (act, Residue (a, All, l, c))
 
-let rec step (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Expr of (Context.t * Expr.t) list | `Value of Value.t] =
+let rec step (expr : Expr.t) :
+    [> `Error of Error.t * Expr.t
+    | `Expr of (Context.t * Expr.t) list
+    | `Value of Value.t ] =
   let instr'd = instr Any Pause One 0 expr in
   let decomposed = Context.decompose instr'd in
   let annot'd =
     decomposed
     |> List.map @@ fun (ctx, expr) ->
        match expr with
-       | Syntax.Expr.Filter _
-       | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
+       | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
        | _ ->
            let act, ctx = annot Pause 0 ctx in
            (act, ctx, expr)
@@ -470,10 +552,10 @@ let rec step (expr : Expr.t) : [> `Error of Error.t * Expr.t | `Expr of (Context
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
   | None -> (
       match annot'd |> List.map (fun (_, c, e) -> (c, e)) with
-      | [] ->
-        (match (Expr.to_value expr) with
-        | None -> `Error (Error.Not_a_value, expr)
-        | Some value -> `Value value)
+      | [] -> (
+          match Expr.to_value expr with
+          | None -> `Error (Error.Not_a_value, expr)
+          | Some value -> `Value value)
       | expr -> `Expr expr)
   | Some (_, ctx, expr) -> (
       match transition expr with

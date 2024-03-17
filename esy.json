@@ -10,7 +10,10 @@
     "@opam/reason-react-ppx": "*",
     "ocaml": "5.1.x"
   },
-  "devDependencies": { "@opam/ocaml-lsp-server": "1.16.2" },
+  "devDependencies": {
+    "@opam/ocaml-lsp-server": "1.16.2",
+    "@opam/ocamlformat": "0.25.1"
+  },
   "esy": {
     "buildsInSource": "_build",
     "build": [ "dune build @react" ]
