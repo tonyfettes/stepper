@@ -476,63 +476,68 @@ let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
 
 let rec annot (act : Act.t) (lvl : int) (ctx : Context.t) =
   match ctx with
-  | Top -> (act, ctx)
-  | Eq_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Eq_l (c, e))
-  | Eq_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Eq_r (e, c))
-  | And_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, And_l (c, e))
-  | And_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, And_r (e, c))
-  | Or_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Or_l (c, e))
-  | Or_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Or_r (e, c))
-  | Add_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Add_l (c, e))
-  | Add_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Add_r (e, c))
-  | Sub_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Sub_l (c, e))
-  | Sub_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Sub_r (e, c))
-  | Mul_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Mul_l (c, e))
-  | Mul_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Mul_r (e, c))
-  | Ap_l (c, e) ->
-      let act, c = annot act lvl c in
-      (act, Ap_l (c, e))
-  | Ap_r (e, c) ->
-      let act, c = annot act lvl c in
-      (act, Ap_r (e, c))
-  | If (c, t, f) ->
-      let act, c = annot act lvl c in
-      (act, If (c, t, f))
-  | Filter (p, a, g, c) ->
-      let act, c = annot act lvl c in
-      (act, Filter (p, a, g, c))
+  | Top -> act
+  | Eq_l (c, _) ->
+      annot act lvl c
+  | Eq_r (_, c) ->
+      annot act lvl c
+  | And_l (c, _) ->
+      annot act lvl c
+  | And_r (_, c) ->
+      annot act lvl c
+  | Or_l (c, _) ->
+      annot act lvl c
+  | Or_r (_, c) ->
+      annot act lvl c
+  | Add_l (c, _) ->
+      annot act lvl c
+  | Add_r (_, c) ->
+      annot act lvl c
+  | Sub_l (c, _) ->
+      annot act lvl c
+  | Sub_r (_, c) ->
+      annot act lvl c
+  | Mul_l (c, _) ->
+      annot act lvl c
+  | Mul_r (_, c) ->
+      annot act lvl c
+  | Ap_l (c, _) ->
+      annot act lvl c
+  | Ap_r (_, c) ->
+      annot act lvl c
+  | If (c, _, _) ->
+      annot act lvl c
+  | Filter (_, _, _, c) ->
+      annot act lvl c
   | Residue (a, One, l, c) -> if l > lvl then annot a l c else annot act lvl c
   | Residue (a, All, l, c) ->
       if l > lvl then
-        let act, c = annot a l c in
-        (act, Residue (a, All, l, c))
+        annot a l c
       else
-        let act, c = annot act lvl c in
-        (act, Residue (a, All, l, c))
+        annot act lvl c
+
+let rec decay (ctx : Context.t) =
+  match ctx with
+  | Top -> Context.Top
+  | Eq_l (c, e) -> Eq_l (decay c, e)
+  | Eq_r (e, c) -> Eq_r (e, decay c)
+  | And_l (c, e) -> And_l (decay c, e)
+  | And_r (e, c) -> And_r (e, decay c)
+  | Or_l (c, e) -> Or_l (decay c, e)
+  | Or_r (e, c) -> Or_r (e, decay c)
+  | Add_l (c, e) -> Add_l (decay c, e)
+  | Add_r (e, c) -> Add_r (e, decay c)
+  | Sub_l (c, e) -> Sub_l (decay c, e)
+  | Sub_r (e, c) -> Sub_r (e, decay c)
+  | Mul_l (c, e) -> Mul_l (decay c, e)
+  | Mul_r (e, c) -> Mul_r (e, decay c)
+  | Ap_l (c, e) -> Ap_l (decay c, e)
+  | Ap_r (e, c) -> Ap_r (e, decay c)
+  | If (c, t, f) -> If (decay c, t, f)
+  | Filter (p, a, g, c) -> Filter (p, a, g, decay c)
+  | Residue (_, One, _, c) -> decay c
+  | Residue (a, All, l, c) -> Residue (a, All, l, decay c)
+;;
 
 let rec step (expr : Expr.t) :
     [> `Error of Error.t * Expr.t
@@ -546,8 +551,9 @@ let rec step (expr : Expr.t) :
        match expr with
        | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
        | _ ->
-           let act, ctx = annot Pause 0 ctx in
-           (act, ctx, expr)
+        let act = annot Pause 0 ctx in
+        let context = decay ctx in
+        (act, context, expr)
   in
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
   | None -> (
