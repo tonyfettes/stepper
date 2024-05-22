@@ -4,13 +4,18 @@ synopsis: "Reference implementation of the Hazel Mini stepper"
 description: "Reference implementation of the Hazel Mini stepper"
 maintainer: ["Haoxiang Fei"]
 authors: ["Haoxiang Fei"]
-license: "LICENSE"
+license: "MIT"
 homepage: "https://github.com/tonyfettes/hazel-mini-stepper"
 doc: "https://url/to/documentation"
 bug-reports: "https://github.com/tonyfettes/hazel-mini-stepper/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.8"}
+  "melange"
+  "melange-webapi"
+  "reason"
+  "reason-react"
+  "reason-react-ppx"
   "odoc" {with-doc}
 ]
 build: [

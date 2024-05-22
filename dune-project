@@ -17,7 +17,7 @@
 
 (maintainers "Haoxiang Fei")
 
-(license LICENSE)
+(license MIT)
 
 (documentation https://url/to/documentation)
 
@@ -25,6 +25,6 @@
  (name stepper)
  (synopsis "Reference implementation of the Hazel Mini stepper")
  (description "Reference implementation of the Hazel Mini stepper")
- (depends ocaml dune))
+ (depends ocaml dune melange melange-webapi reason reason-react reason-react-ppx))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

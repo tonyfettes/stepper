@@ -195,7 +195,9 @@ end = struct
       | Or (e_l, e_r) ->
           PPrint.(pretty_print e_l ^/^ string "||" ^/^ pretty_print e_r)
       | Add (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "+" ^/^ pretty_print ~prec:(taken_prec - 1) e_r)
+          PPrint.(
+            pretty_print e_l ^/^ string "+"
+            ^/^ pretty_print ~prec:(taken_prec - 1) e_r)
       | Sub (e_l, e_r) ->
           PPrint.(pretty_print e_l ^/^ string "-" ^/^ pretty_print e_r)
       | Mul (e_l, e_r) ->
@@ -213,18 +215,20 @@ end = struct
       | Filter (p, a, g, e) ->
           let keyword = to_keyword a g in
           PPrint.(
-            string keyword ^/^ (string (Pat.to_string p)) ^/^ string "in"
-            ^/^ pretty_print e)
+            string keyword
+            ^/^ string (Pat.to_string p)
+            ^/^ string "in" ^/^ pretty_print e)
       | Residue (a, g, l, e) ->
           if residue then
             let keyword = to_keyword a g in
             PPrint.(
-              string keyword ^/^ string "#" ^/^ PPrint.string (string_of_int l) ^/^ string "in"
-              ^/^ pretty_print e)
-          else pretty_print ~prec:prec e
+              string keyword ^/^ string "#"
+              ^/^ PPrint.string (string_of_int l)
+              ^/^ string "in" ^/^ pretty_print e)
+          else pretty_print ~prec e
     in
-    if Expr.take_prec expr < prec then PPrint.(parens (nest 1 document)) else PPrint.group document
-  ;;
+    if Expr.take_prec expr < prec then PPrint.(parens (nest 1 document))
+    else PPrint.group document
 
   let rec to_string ?(residue = false) ?(prec = 0) (expr : Expr.t) =
     let taken_prec = Expr.take_prec expr in
@@ -243,7 +247,8 @@ end = struct
       | Or (e_l, e_r) ->
           Printf.sprintf "%s || %s" (to_string e_l) (to_string e_r)
       | Add (e_l, e_r) ->
-          Printf.sprintf "%s + %s" (to_string e_l) (to_string ~prec:(taken_prec - 1) e_r)
+          Printf.sprintf "%s + %s" (to_string e_l)
+            (to_string ~prec:(taken_prec - 1) e_r)
       | Sub (e_l, e_r) ->
           Printf.sprintf "%s - %s" (to_string e_l) (to_string e_r)
       | Mul (e_l, e_r) ->
@@ -263,7 +268,7 @@ end = struct
           if residue then
             let keyword = to_keyword a g in
             Printf.sprintf "%s #%d in %s" keyword l (to_string e)
-          else to_string ~prec:prec e
+          else to_string ~prec e
     in
     if Expr.take_prec expr < prec then "(" ^ string ^ ")" else string
 

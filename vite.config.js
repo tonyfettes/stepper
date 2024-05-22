@@ -9,8 +9,8 @@ export default defineConfig({
       enforce: 'pre',
       ...melangePlugin({
         emitDir: "web",
-        buildCommand: "esy -- dune build @react",
-        watchCommand: "esy -- dune build --watch @react",
+        buildCommand: "dune build @react",
+        watchCommand: "dune build --watch @react",
       })
     },
     preact({

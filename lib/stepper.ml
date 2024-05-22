@@ -229,9 +229,13 @@ module Context = struct
       | Or_r (e, c) ->
           PPrint.(expr_pretty_print e ^/^ string "||" ^/^ pretty_print c)
       | Add_l (c, e) ->
-          PPrint.(pretty_print c ^/^ string "+" ^/^ expr_pretty_print ~prec:(taken_prec - 1) e)
+          PPrint.(
+            pretty_print c ^/^ string "+"
+            ^/^ expr_pretty_print ~prec:(taken_prec - 1) e)
       | Add_r (e, c) ->
-          PPrint.(expr_pretty_print e ^/^ string "+" ^/^ pretty_print ~prec:(taken_prec - 1) c)
+          PPrint.(
+            expr_pretty_print e ^/^ string "+"
+            ^/^ pretty_print ~prec:(taken_prec - 1) c)
       | Sub_l (c, e) ->
           PPrint.(pretty_print c ^/^ string "-" ^/^ expr_pretty_print e)
       | Sub_r (e, c) ->
@@ -477,44 +481,24 @@ let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
 let rec annot (act : Act.t) (lvl : int) (ctx : Context.t) =
   match ctx with
   | Top -> act
-  | Eq_l (c, _) ->
-      annot act lvl c
-  | Eq_r (_, c) ->
-      annot act lvl c
-  | And_l (c, _) ->
-      annot act lvl c
-  | And_r (_, c) ->
-      annot act lvl c
-  | Or_l (c, _) ->
-      annot act lvl c
-  | Or_r (_, c) ->
-      annot act lvl c
-  | Add_l (c, _) ->
-      annot act lvl c
-  | Add_r (_, c) ->
-      annot act lvl c
-  | Sub_l (c, _) ->
-      annot act lvl c
-  | Sub_r (_, c) ->
-      annot act lvl c
-  | Mul_l (c, _) ->
-      annot act lvl c
-  | Mul_r (_, c) ->
-      annot act lvl c
-  | Ap_l (c, _) ->
-      annot act lvl c
-  | Ap_r (_, c) ->
-      annot act lvl c
-  | If (c, _, _) ->
-      annot act lvl c
-  | Filter (_, _, _, c) ->
-      annot act lvl c
+  | Eq_l (c, _) -> annot act lvl c
+  | Eq_r (_, c) -> annot act lvl c
+  | And_l (c, _) -> annot act lvl c
+  | And_r (_, c) -> annot act lvl c
+  | Or_l (c, _) -> annot act lvl c
+  | Or_r (_, c) -> annot act lvl c
+  | Add_l (c, _) -> annot act lvl c
+  | Add_r (_, c) -> annot act lvl c
+  | Sub_l (c, _) -> annot act lvl c
+  | Sub_r (_, c) -> annot act lvl c
+  | Mul_l (c, _) -> annot act lvl c
+  | Mul_r (_, c) -> annot act lvl c
+  | Ap_l (c, _) -> annot act lvl c
+  | Ap_r (_, c) -> annot act lvl c
+  | If (c, _, _) -> annot act lvl c
+  | Filter (_, _, _, c) -> annot act lvl c
   | Residue (a, One, l, c) -> if l > lvl then annot a l c else annot act lvl c
-  | Residue (a, All, l, c) ->
-      if l > lvl then
-        annot a l c
-      else
-        annot act lvl c
+  | Residue (a, All, l, c) -> if l > lvl then annot a l c else annot act lvl c
 
 let rec decay (ctx : Context.t) =
   match ctx with
@@ -537,7 +521,6 @@ let rec decay (ctx : Context.t) =
   | Filter (p, a, g, c) -> Filter (p, a, g, decay c)
   | Residue (_, One, _, c) -> decay c
   | Residue (a, All, l, c) -> Residue (a, All, l, decay c)
-;;
 
 let rec step (expr : Expr.t) :
     [> `Error of Error.t * Expr.t
@@ -551,9 +534,9 @@ let rec step (expr : Expr.t) :
        match expr with
        | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
        | _ ->
-        let act = annot Pause 0 ctx in
-        let context = decay ctx in
-        (act, context, expr)
+           let act = annot Pause 0 ctx in
+           let context = decay ctx in
+           (act, context, expr)
   in
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annot'd with
   | None -> (
