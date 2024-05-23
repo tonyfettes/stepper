@@ -36,6 +36,7 @@ module rec Pat : sig
     | If of t * t * t
 
   val to_string : t -> string
+  val pretty_print : t -> PPrint.document
   val subst : t -> string -> Value.t -> t
   val matches : t -> Expr.t -> bool
 end = struct
@@ -80,6 +81,9 @@ end = struct
     | If (p, t, f) ->
         Printf.sprintf "(if %s then %s else %s)" (to_string p) (to_string t)
           (to_string f)
+
+  let pretty_print (pat : t) : PPrint.document =
+    PPrint.string (to_string pat)
 
   let rec subst (pat : t) (var : string) (value : Value.t) =
     match pat with
@@ -154,7 +158,7 @@ and Expr : sig
     | Residue of Act.t * Gas.t * int * t
 
   val pretty_print : ?residue:bool -> ?prec:int -> t -> PPrint.document
-  val to_string : ?residue:bool -> ?prec:int -> t -> string
+  val to_string : t -> string
   val to_pat : t -> Pat.t
   val to_value : t -> Value.t option
   val take_prec : t -> int
@@ -230,47 +234,30 @@ end = struct
     if Expr.take_prec expr < prec then PPrint.(parens (nest 1 document))
     else PPrint.group document
 
-  let rec to_string ?(residue = false) ?(prec = 0) (expr : Expr.t) =
-    let taken_prec = Expr.take_prec expr in
-    let to_string ?(residue = residue) ?(prec = taken_prec) =
-      to_string ~residue ~prec
-    in
-    let string =
-      match expr with
-      | Var var -> var
-      | Int int -> string_of_int int
-      | Bool bool -> string_of_bool bool
-      | Eq (e_l, e_r) ->
-          Printf.sprintf "%s == %s" (to_string e_l) (to_string e_r)
-      | And (e_l, e_r) ->
-          Printf.sprintf "%s && %s" (to_string e_l) (to_string e_r)
-      | Or (e_l, e_r) ->
-          Printf.sprintf "%s || %s" (to_string e_l) (to_string e_r)
-      | Add (e_l, e_r) ->
-          Printf.sprintf "%s + %s" (to_string e_l)
-            (to_string ~prec:(taken_prec - 1) e_r)
-      | Sub (e_l, e_r) ->
-          Printf.sprintf "%s - %s" (to_string e_l) (to_string e_r)
-      | Mul (e_l, e_r) ->
-          Printf.sprintf "%s * %s" (to_string e_l) (to_string e_r)
-      | Ap (e_l, e_r) ->
-          Printf.printf "Ap";
-          Printf.sprintf "%s(%s)" (to_string e_l) (to_string ~prec:0 e_r)
-      | Fun (x, e) -> Printf.sprintf "fun %s -> %s" x (to_string e)
-      | Fix (x, e) -> Printf.sprintf "fix %s -> %s" x (to_string e)
-      | If (p, t, f) ->
-          Printf.sprintf "if %s then %s else %s" (to_string p) (to_string t)
-            (to_string f)
-      | Filter (p, a, g, e) ->
-          let keyword = to_keyword a g in
-          Printf.sprintf "%s %s in %s" keyword (Pat.to_string p) (to_string e)
-      | Residue (a, g, l, e) ->
-          if residue then
-            let keyword = to_keyword a g in
-            Printf.sprintf "%s #%d in %s" keyword l (to_string e)
-          else to_string ~prec e
-    in
-    if Expr.take_prec expr < prec then "(" ^ string ^ ")" else string
+  let rec to_string = function
+    | Var var -> var
+    | Int int -> string_of_int int
+    | Bool bool -> string_of_bool bool
+    | Eq (e_l, e_r) -> Printf.sprintf "(%s == %s)" (to_string e_l) (to_string e_r)
+    | And (e_l, e_r) ->
+        Printf.sprintf "(%s && %s)" (to_string e_l) (to_string e_r)
+    | Or (e_l, e_r) -> Printf.sprintf "(%s || %s)" (to_string e_l) (to_string e_r)
+    | Add (e_l, e_r) -> Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
+    | Sub (e_l, e_r) -> Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
+    | Mul (e_l, e_r) -> Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
+    | Ap (e_l, e_r) ->
+        Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
+    | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (to_string e)
+    | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (to_string e)
+    | If (p, t, f) ->
+        Printf.sprintf "(if %s then %s else %s)" (to_string p) (to_string t)
+          (to_string f)
+    | Filter (p, a, g, e) ->
+        let keyword = to_keyword a g in
+        Printf.sprintf "(%s %s in %s)" keyword (Pat.to_string p) (to_string e)
+    | Residue (a, g, l, e) ->
+        let keyword = to_keyword a g in
+        Printf.sprintf "(%s #%d in %s)" keyword l (to_string e)
 
   let rec to_pat = function
     | Var var -> Pat.Var var
@@ -299,14 +286,14 @@ end = struct
         None
 
   let take_prec = function
-    | Var _ | Int _ | Bool _ -> 14
-    | Eq _ -> 2
-    | And _ -> 6
-    | Or _ -> 4
-    | Add _ -> 8
-    | Sub _ -> 8
-    | Mul _ -> 10
-    | Ap _ -> 12
+    | Var _ | Int _ | Bool _ -> 7
+    | Eq _ -> 3
+    | And _ -> 2
+    | Or _ -> 1
+    | Add _ -> 4
+    | Sub _ -> 4
+    | Mul _ -> 5
+    | Ap _ -> 6
     | Fun _ -> 0
     | Fix _ -> 0
     | If _ -> 0

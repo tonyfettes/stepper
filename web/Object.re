@@ -11,7 +11,7 @@ let make =
   |> Stepper.Context.pretty_print(~residue=settings.showResidue)
   |> PPrint.ToBuffer.pretty(1.0, 64, buffer);
   let onClick = _ => onClick(context, expr);
-  let expr = Stepper.Expr.to_string(~residue=settings.showResidue, expr);
+  let expr = Stepper.Expr.to_string(expr);
   let segments = buffer |> Buffer.contents |> String.split_on_char('@');
   switch (segments) {
   | [prefix, suffix] =>
