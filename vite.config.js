@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import melangePlugin from "vite-plugin-melange";
-import preact from "@preact/preset-vite";
+import react from '@vitejs/plugin-react';
+
+const ReactCompilerConfig = {}
 
 export default defineConfig({
   base: './',
@@ -9,20 +11,19 @@ export default defineConfig({
       enforce: 'pre',
       ...melangePlugin({
         emitDir: "web",
-        buildCommand: "dune build @react",
-        watchCommand: "dune build --watch @react",
+        buildCommand: "dune build @react --release",
+        watchCommand: "dune build --watch @react --release",
       })
     },
-    preact({
+    react({
+      babel: {
+        plugins: [
+          ["babel-plugin-react-compiler", ReactCompilerConfig],
+        ]
+      },
       include: /\.(js|jsx|ts|tsx|re|rei|ml|mli)$/
     }),
   ],
-  resolve: {
-    alias: {
-      react: 'preact/compat',
-      'react-dom': 'preact/compat',
-    },
-  },
   server: {
     watch: {
       usePolling: true,

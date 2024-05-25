@@ -82,8 +82,7 @@ end = struct
         Printf.sprintf "(if %s then %s else %s)" (to_string p) (to_string t)
           (to_string f)
 
-  let pretty_print (pat : t) : PPrint.document =
-    PPrint.string (to_string pat)
+  let pretty_print (pat : t) : PPrint.document = PPrint.string (to_string pat)
 
   let rec subst (pat : t) (var : string) (value : Value.t) =
     match pat with
@@ -238,15 +237,19 @@ end = struct
     | Var var -> var
     | Int int -> string_of_int int
     | Bool bool -> string_of_bool bool
-    | Eq (e_l, e_r) -> Printf.sprintf "(%s == %s)" (to_string e_l) (to_string e_r)
+    | Eq (e_l, e_r) ->
+        Printf.sprintf "(%s == %s)" (to_string e_l) (to_string e_r)
     | And (e_l, e_r) ->
         Printf.sprintf "(%s && %s)" (to_string e_l) (to_string e_r)
-    | Or (e_l, e_r) -> Printf.sprintf "(%s || %s)" (to_string e_l) (to_string e_r)
-    | Add (e_l, e_r) -> Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
-    | Sub (e_l, e_r) -> Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
-    | Mul (e_l, e_r) -> Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
-    | Ap (e_l, e_r) ->
-        Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
+    | Or (e_l, e_r) ->
+        Printf.sprintf "(%s || %s)" (to_string e_l) (to_string e_r)
+    | Add (e_l, e_r) ->
+        Printf.sprintf "(%s + %s)" (to_string e_l) (to_string e_r)
+    | Sub (e_l, e_r) ->
+        Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
+    | Mul (e_l, e_r) ->
+        Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
+    | Ap (e_l, e_r) -> Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
     | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (to_string e)
     | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (to_string e)
     | If (p, t, f) ->
