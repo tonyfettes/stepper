@@ -10,12 +10,14 @@ doc: "https://url/to/documentation"
 bug-reports: "https://github.com/tonyfettes/hazel-mini-stepper/issues"
 depends: [
   "ocaml"
-  "dune" {>= "3.8"}
+  "dune" {>= "3.15"}
   "melange"
   "melange-webapi"
   "reason"
   "reason-react"
   "reason-react-ppx"
+  "ocaml-lsp-server" {dev}
+  "ocamlformat" {dev}
   "odoc" {with-doc}
 ]
 build: [
