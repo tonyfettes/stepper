@@ -62,13 +62,17 @@ jobs:
 
       - name: Setup OCaml
         uses: ocaml/setup-ocaml@v2.2.9
+        with:
+          ocaml-compiler: "5.2"
+
+      - name: Install OPAM dependencies
+        run: opam install . --deps-only --with-test
 
       - name: Install pnpm dependencies
         run: pnpm install
 
       - name: Build
-        run: |
-          pnpm run build
+        run: pnpm run build
 
       - name: Commit
         run: |
