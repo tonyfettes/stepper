@@ -25,6 +25,6 @@
  (name stepper)
  (synopsis "Reference implementation of the Hazel Mini stepper")
  (description "Reference implementation of the Hazel Mini stepper")
- (depends ocaml dune melange melange-webapi reason reason-react reason-react-ppx))
+ (depends ocaml dune melange melange-webapi reason reason-react reason-react-ppx (ocaml-lsp-server :dev) (ocamlformat :dev)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

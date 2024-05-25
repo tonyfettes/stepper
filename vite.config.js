@@ -11,8 +11,8 @@ export default defineConfig({
       enforce: 'pre',
       ...melangePlugin({
         emitDir: "web",
-        buildCommand: "dune build @react --release",
-        watchCommand: "dune build --watch @react --release",
+        buildCommand: "opam exec -- dune build @react",
+        watchCommand: "opam exec -- dune build --watch @react",
       })
     },
     react({
