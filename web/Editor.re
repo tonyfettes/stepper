@@ -63,10 +63,6 @@ let make = () => {
   };
 
   <>
-    <Settings
-      value=settings
-      onChange={settings => setSettings(_ => settings)}
-    />
     <Input
       value=input
       onChange={input => {
@@ -77,9 +73,11 @@ let make = () => {
         inputResult(input);
       }}
     />
-    <hr />
+    <Settings
+      value=settings
+      onChange={settings => setSettings(_ => settings)}
+    />
     <History settings history={history->List.rev} />
-    <hr />
-    <Result settings value=result onClick=onStep />
+    <Output settings value=result onClick=onStep />
   </>;
 };

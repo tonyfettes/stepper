@@ -16,7 +16,7 @@ let make =
     </div>
   | `Value(value) =>
     <div className="whitespace-pre font-mono text-green-500">
-      {value->Stepper.Value.to_string->React.string}
+      value->Stepper.Value.to_string->React.string
     </div>
   | `Expr(expr) =>
     expr
