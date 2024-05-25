@@ -60,16 +60,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Install esy using pnpm
-        run: pnpm install -g esy
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v2.2.9
 
       - name: Install pnpm dependencies
         run: pnpm install
-
-      - name: Setup esy
-        uses: esy/github-action@v1
-        with:
-          cache-key: ${{ hashFiles('esy.lock/index.json') }}
 
       - name: Build
         run: |
