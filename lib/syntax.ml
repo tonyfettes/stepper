@@ -10,12 +10,12 @@ module Gas = struct
   let to_string = function One -> "one" | All -> "all"
 end
 
-let to_keyword (act : Act.t) (gas : Gas.t) =
+let to_keyword ?(short = false) (act : Act.t) (gas : Gas.t) =
   match (act, gas) with
-  | Eval, One -> "hide"
-  | Eval, All -> "eval"
-  | Pause, One -> "pause"
-  | Pause, All -> "debug"
+  | Eval, One -> if short then "h" else "hide"
+  | Eval, All -> if short then "e" else "eval"
+  | Pause, One -> if short then "p" else "pause"
+  | Pause, All -> if short then "d" else "debug"
 
 module rec Pat : sig
   type t =
@@ -156,11 +156,11 @@ and Expr : sig
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  val pretty_print : ?residue:bool -> ?prec:int -> t -> PPrint.document
+  val pretty_print : ?shortKeyword:bool -> ?residue:bool -> ?prec:int -> t -> PPrint.document
   val to_string : t -> string
   val to_pat : t -> Pat.t
   val to_value : t -> Value.t option
-  val take_prec : t -> int
+  val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
   val subst : t -> string -> Value.t -> t
 end = struct
@@ -181,57 +181,69 @@ end = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec pretty_print ?(residue = false) ?(prec = 0) (expr : Expr.t) =
-    let taken_prec = Expr.take_prec expr in
+  let rec pretty_print ?(shortKeyword = true) ?(residue = false) ?(prec = 0) (expr : Expr.t) =
+    let taken_prec = Expr.take_prec ~residue expr in
     let pretty_print ?(residue = residue) ?(prec = taken_prec) =
       pretty_print ~residue ~prec
     in
-    let document =
-      match expr with
-      | Var var -> PPrint.string var
-      | Int int -> PPrint.string (string_of_int int)
-      | Bool bool -> PPrint.string (string_of_bool bool)
-      | Eq (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "==" ^/^ pretty_print e_r)
-      | And (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "&&" ^/^ pretty_print e_r)
-      | Or (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "||" ^/^ pretty_print e_r)
-      | Add (e_l, e_r) ->
-          PPrint.(
-            pretty_print e_l ^/^ string "+"
-            ^/^ pretty_print ~prec:(taken_prec - 1) e_r)
-      | Sub (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "-" ^/^ pretty_print e_r)
-      | Mul (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ string "*" ^/^ pretty_print e_r)
-      | Ap (e_l, e_r) ->
-          PPrint.(pretty_print e_l ^/^ parens (pretty_print ~prec:0 e_r))
-      | Fun (x, e) ->
-          PPrint.(string "fun" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
-      | Fix (x, e) ->
-          PPrint.(string "fix" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
-      | If (p, t, f) ->
-          PPrint.(
-            string "if" ^/^ pretty_print p ^/^ string "then" ^/^ pretty_print t
-            ^/^ string "else" ^/^ pretty_print f)
-      | Filter (p, a, g, e) ->
-          let keyword = to_keyword a g in
-          PPrint.(
-            string keyword
-            ^/^ string (Pat.to_string p)
-            ^/^ string "in" ^/^ pretty_print e)
-      | Residue (a, g, l, e) ->
-          if residue then
-            let keyword = to_keyword a g in
-            PPrint.(
-              string keyword ^/^ string "#"
-              ^/^ PPrint.string (string_of_int l)
-              ^/^ string "in" ^/^ pretty_print e)
-          else pretty_print ~prec e
+    let prec_parens document =
+      if taken_prec < prec then PPrint.(parens (nest 1 document))
+      else PPrint.group document
     in
-    if Expr.take_prec expr < prec then PPrint.(parens (nest 1 document))
-    else PPrint.group document
+    match expr with
+    | Var var -> PPrint.string var |> prec_parens
+    | Int int -> PPrint.string (string_of_int int) |> prec_parens
+    | Bool bool -> PPrint.string (string_of_bool bool) |> prec_parens
+    | Eq (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ string "==" ^/^ pretty_print e_r)
+        |> prec_parens
+    | And (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ string "&&" ^/^ pretty_print e_r)
+        |> prec_parens
+    | Or (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ string "||" ^/^ pretty_print e_r)
+        |> prec_parens
+    | Add (e_l, e_r) ->
+        PPrint.(
+          pretty_print e_l ^/^ string "+"
+          ^/^ pretty_print ~prec:(taken_prec + 1) e_r)
+        |> prec_parens
+    | Sub (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ string "-" ^/^ pretty_print e_r)
+        |> prec_parens
+    | Mul (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ string "*" ^/^ pretty_print e_r)
+        |> prec_parens
+    | Ap (e_l, e_r) ->
+        PPrint.(pretty_print e_l ^/^ parens (pretty_print ~prec:0 e_r))
+        |> prec_parens
+    | Fun (x, e) ->
+        PPrint.(string "fun" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
+        |> prec_parens
+    | Fix (x, e) ->
+        PPrint.(string "fix" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
+        |> prec_parens
+    | If (p, t, f) ->
+        PPrint.(
+          string "if" ^/^ pretty_print p ^/^ string "then" ^/^ pretty_print t
+          ^/^ string "else" ^/^ pretty_print f)
+        |> prec_parens
+    | Filter (p, a, g, e) ->
+        let keyword = to_keyword a g in
+        PPrint.(
+          string keyword
+          ^/^ string (Pat.to_string p)
+          ^/^ string "in" ^/^ pretty_print e)
+        |> prec_parens
+    | Residue (a, g, l, e) ->
+        if residue then
+          let keyword = to_keyword ~short:shortKeyword a g in
+          PPrint.(
+            string keyword ^^ string "#"
+            ^^ string (string_of_int l)
+            ^^ string "[" ^^ break 0 ^^ pretty_print ~prec:0 e ^^ break 0 ^^ string "]")
+          |> prec_parens
+        else pretty_print ~prec e
 
   let rec to_string = function
     | Var var -> var
@@ -288,7 +300,8 @@ end = struct
     | Filter _ | Residue _ ->
         None
 
-  let take_prec = function
+  let rec take_prec ?(residue = false) (expr : t) =
+    match expr with
     | Var _ | Int _ | Bool _ -> 7
     | Eq _ -> 3
     | And _ -> 2
@@ -301,7 +314,7 @@ end = struct
     | Fix _ -> 0
     | If _ -> 0
     | Filter _ -> 0
-    | Residue _ -> 0
+    | Residue (_, _, _, e) -> if residue then 6 else take_prec e
 
   let rec strip = function
     | Filter (_, _, _, e) -> strip e

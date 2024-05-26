@@ -7,7 +7,7 @@ let make =
       ~onChange: bool => unit,
       ~children: React.element,
     ) => {
-  <div className="flex gap-2 items-center">
+  <span className="flex gap-2 items-baseline">
     <input
       type_="checkbox"
       id
@@ -16,5 +16,5 @@ let make =
       onChange={e => React.Event.Form.(e->target)##checked->onChange}
     />
     <label htmlFor=id> children </label>
-  </div>;
+  </span>;
 };

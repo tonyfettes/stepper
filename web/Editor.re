@@ -9,10 +9,12 @@ let make = () => {
     let result =
       switch (Stepper.step(expr)) {
       | `Error(error, expr) =>
+        let buffer = Buffer.create(42);
+        expr->Stepper.Expr.pretty_print |> PPrint.ToBuffer.pretty(1.0, 80, buffer);
         `Error(
           Printf.sprintf(
             "%s: %s",
-            expr->Stepper.Expr.to_string,
+            Buffer.contents(buffer),
             error->Stepper.Error.to_string,
           ),
         )

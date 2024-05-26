@@ -12,5 +12,5 @@ let make = (~settings: Settings.t, ~history) => {
         />
       )
     ->Belt.List.toArray;
-  <div> history->React.array </div>;
+  <ol> history->React.array </ol>;
 };

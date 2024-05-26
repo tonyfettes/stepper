@@ -193,33 +193,33 @@ module Context = struct
     | Residue of Act.t * Gas.t * int * t
 
   let take_prec = function
-    | Top -> 14
-    | Eq_l _ | Eq_r _ -> 2
-    | And_l _ | And_r _ -> 6
-    | Or_l _ | Or_r _ -> 4
-    | Add_l _ | Add_r _ -> 8
-    | Sub_l _ | Sub_r _ -> 8
-    | Mul_l _ | Mul_r _ -> 10
-    | Ap_l _ | Ap_r _ -> 12
+    | Top -> 7
+    | Eq_l _ | Eq_r _ -> 3
+    | And_l _ | And_r _ -> 2
+    | Or_l _ | Or_r _ -> 1
+    | Add_l _ | Add_r _ -> 4
+    | Sub_l _ | Sub_r _ -> 4
+    | Mul_l _ | Mul_r _ -> 5
+    | Ap_l _ | Ap_r _ -> 6
     | If _ -> 0
     | Filter _ -> 0
     | Residue _ -> 0
 
   let rec pretty_print ?(residue = false) ?(prec = 0) (context : t) =
-    let pretty_print ?(residue = residue) ?(prec = take_prec context) =
+    let taken_prec = take_prec context in
+    let pretty_print ?(residue = residue) ?(prec = taken_prec) =
       pretty_print ~residue ~prec
     in
-    let expr_pretty_print ?(residue = residue) ?(prec = take_prec context) =
+    let expr_pretty_print ?(residue = residue) ?(prec = taken_prec) =
       Expr.pretty_print ~residue ~prec
     in
-    let taken_prec = take_prec context in
     let document =
       match context with
       | Top -> PPrint.(parens (string "@"))
       | Eq_l (c, e) ->
-          PPrint.(pretty_print c ^/^ string "=" ^/^ expr_pretty_print e)
+          PPrint.(pretty_print c ^/^ string "==" ^/^ expr_pretty_print e)
       | Eq_r (e, c) ->
-          PPrint.(expr_pretty_print e ^/^ string "=" ^/^ pretty_print c)
+          PPrint.(expr_pretty_print e ^/^ string "==" ^/^ pretty_print c)
       | And_l (c, e) ->
           PPrint.(pretty_print c ^/^ string "&&" ^/^ expr_pretty_print e)
       | And_r (e, c) ->
@@ -231,11 +231,11 @@ module Context = struct
       | Add_l (c, e) ->
           PPrint.(
             pretty_print c ^/^ string "+"
-            ^/^ expr_pretty_print ~prec:(taken_prec - 1) e)
+            ^/^ expr_pretty_print ~prec:(taken_prec + 1) e)
       | Add_r (e, c) ->
           PPrint.(
             expr_pretty_print e ^/^ string "+"
-            ^/^ pretty_print ~prec:(taken_prec - 1) c)
+            ^/^ pretty_print ~prec:(taken_prec + 1) c)
       | Sub_l (c, e) ->
           PPrint.(pretty_print c ^/^ string "-" ^/^ expr_pretty_print e)
       | Sub_r (e, c) ->
@@ -264,17 +264,18 @@ module Context = struct
             ^/^ string "in" ^/^ pretty_print c)
       | Residue (a, g, l, c) ->
           if residue then
+            let keyword = to_keyword a g in
             PPrint.(
-              string (to_keyword a g)
-              ^/^ string "#"
-              ^/^ string (string_of_int l)
-              ^/^ string "in" ^/^ pretty_print c)
+              string keyword ^^ string "#"
+              ^^ string (string_of_int l)
+              ^^ string "[" ^^ break 0 ^^ pretty_print c ^^ break 0
+              ^^ string "]")
           else pretty_print ~prec c
     in
-    if take_prec context < prec then PPrint.(parens (nest 1 document))
+    if taken_prec < prec then PPrint.(parens (nest 1 document))
     else PPrint.group document
 
-  let rec to_string (context : t) =
+  and to_string (context : t) =
     match context with
     | Top -> "@"
     | Eq_l (c, e) -> Printf.sprintf "%s = %s" (to_string c) (Expr.to_string e)

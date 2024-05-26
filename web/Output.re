@@ -11,19 +11,20 @@ let make =
     ) => {
   switch (value) {
   | `Error(value) =>
-    <div className="whitespace-pre font-mono text-red-500">
+    <p className="whitespace-pre font-mono text-red-500">
       value->React.string
-    </div>
+    </p>
   | `Value(value) =>
-    <div className="whitespace-pre font-mono text-green-500">
-      value->Stepper.Value.to_string->React.string
-    </div>
+    <p className="whitespace-pre font-mono text-green-500">
+      {value->Stepper.Value.to_string->React.string}
+    </p>
   | `Expr(expr) =>
-    expr
-    ->Belt.List.mapWithIndex((i, (context, expr)) =>
-        <Object settings key={i->Belt.Int.toString} context expr onClick />
-      )
-    ->Belt.List.toArray
-    ->React.array
+    let futures =
+      expr
+      ->Belt.List.mapWithIndex((i, (context, expr)) =>
+          <Object settings key={i->Belt.Int.toString} context expr onClick />
+        )
+      ->Belt.List.toArray;
+    <ul> futures->React.array </ul>
   };
 };
