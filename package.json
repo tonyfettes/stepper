@@ -3,8 +3,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
+    "prebuild": "corepack pnpm run build:lezer",
     "build:lezer": "lezer-generator web/codemirror/stepper.grammar -o web/codemirror/parser && rollup -c",
-    "preview": "vite preview"
+    "clean:lezer": "rm web/codemirror/parser.js web/codemirror/parser.cjs web/codemirror/parser.terms.js"
   },
   "dependencies": {
     "@codemirror/language": "^6.10.1",
