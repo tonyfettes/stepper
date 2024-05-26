@@ -3,4 +3,3 @@ _build/
 _opam/
 .merlin
 dist/
-web/output/
