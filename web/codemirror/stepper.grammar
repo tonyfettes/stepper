@@ -1,20 +1,91 @@
+@precedence {
+  ap
+  unary
+  add @left
+  mul @left
+  and @left
+  or @left
+}
+
+@skip { Whitespace | Comment }
+
 @top Top { expression* }
 
-keyword<term> { @specialize[@name={term}]<identifier, term> }
+keyword<term> { @specialize[@name={term}]<Identifier, term> }
 
 @tokens {
-  integer {
-    ("+" | "-")? @digit+
+  Whitespace {
+    $[ \t\r\n]
   }
 
-  identifier {
+  Integer {
+    @digit+
+  }
+
+  Identifier {
     $[a-zA-Z] $[a-zA-Z0-9_]*
+  }
+
+  Comment[isolate] {
+    "#" ![#]* "#"
   }
 }
 
-expression[@isGroup=Expression] {
-  integer |
-  LetExpression {
-    keyword<"let"> identifier "=" expression keyword<"in"> expression
+Boolean { @specialize[@name=Boolean]<Identifier, "true" | "false"> }
+
+pattern[@isGroup=Pattern] {
+  "$e" | "$v" |
+  Integer |
+  Identifier |
+  Fun {
+    keyword<"fun"> Identifier "->" expression
+  } |
+  FunAny {
+    keyword<"fun"> "$x" "->" expression
+  } |
+  Ap {
+    pattern !ap "(" pattern ")"
+  } |
+  Arith {
+    pattern !add ArithOp { "+" | "-" } pattern |
+    pattern !mul ArithOp { "*" | "/" } pattern
+  }
+}
+
+FilterKeyword {
+  keyword<"eval"> | keyword<"hide"> | keyword<"pause"> | keyword<"debug">
+}
+
+expression {
+  Integer |
+  Negate {
+    ArithOp { "-" } !unary expression
+  } |
+  Identifier |
+  Boolean |
+  Let {
+    keyword<"let"> Identifier "=" expression keyword<"in"> expression
+  } |
+  LetRec {
+    keyword<"let"> keyword<"rec"> Identifier "=" expression keyword<"in"> expression
+  } |
+  If {
+    keyword<"if"> expression keyword<"then"> expression keyword<"else"> expression
+  } |
+  Fun {
+    keyword<"fun"> Identifier "->" expression
+  } |
+  Fix {
+    keyword<"fix"> Identifier "->" expression
+  } |
+  Ap {
+    expression !ap "(" expression ")"
+  } |
+  FilterExpression {
+    FilterKeyword pattern keyword<"in"> expression
+  }
+  ArithExpression {
+    expression !add ArithOp { "+" | "-" } expression |
+    expression !mul ArithOp { "*" | "/" } expression
   }
 }
