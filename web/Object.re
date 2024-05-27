@@ -13,7 +13,6 @@ let make =
     |> Stepper.Context.pretty_print(~residue=settings.showResidue, ~expr)
     |> Stepper.Printer.to_buffer(buffer);
     let string = buffer |> Buffer.contents;
-    Js.log(string);
     switch (string |> String.split_on_char('{')) {
     | [prefix, string] =>
       switch (string |> String.split_on_char('}')) {

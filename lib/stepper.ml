@@ -289,9 +289,7 @@ module Context = struct
     | And_r (e, c) -> Printf.sprintf "%s && %s" (Expr.to_string e) (to_string c)
     | Or_l (c, e) -> Printf.sprintf "%s || %s" (to_string c) (Expr.to_string e)
     | Or_r (e, c) -> Printf.sprintf "%s || %s" (Expr.to_string e) (to_string c)
-    | Add_l (c, e) ->
-        Printf.printf "Add\n";
-        Printf.sprintf "%s + %s" (to_string c) (Expr.to_string e)
+    | Add_l (c, e) -> Printf.sprintf "%s + %s" (to_string c) (Expr.to_string e)
     | Add_r (e, c) -> Printf.sprintf "%s + %s" (Expr.to_string e) (to_string c)
     | Sub_l (c, e) -> Printf.sprintf "%s - %s" (to_string c) (Expr.to_string e)
     | Sub_r (e, c) -> Printf.sprintf "%s - %s" (Expr.to_string e) (to_string c)
