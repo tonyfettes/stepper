@@ -9,15 +9,15 @@ let make = () => {
     let result =
       switch (Stepper.step(expr)) {
       | `Error(error, expr) =>
-        let buffer = Buffer.create(42);
-        expr->Stepper.Expr.pretty_print |> PPrint.ToBuffer.pretty(1.0, 80, buffer);
-        `Error(
-          Printf.sprintf(
-            "%s: %s",
-            Buffer.contents(buffer),
-            error->Stepper.Error.to_string,
-          ),
-        )
+        let expr = {
+          let buffer = Buffer.create(42);
+          expr
+          |> Stepper.Expr.pretty_print
+          |> Stepper.Printer.to_buffer(buffer);
+          Buffer.contents(buffer);
+        };
+        Printf.sprintf("%s: %s", expr, error->Stepper.Error.to_string)
+        ->`Error;
       | `Value(value) => `Value(value)
       | `Expr(expr) => `Expr(expr)
       };

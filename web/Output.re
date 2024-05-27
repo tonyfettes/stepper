@@ -15,9 +15,13 @@ let make =
       value->React.string
     </p>
   | `Value(value) =>
+    let buffer = Buffer.create(42);
+    value
+    |> Stepper.Value.pretty_print
+    |> Stepper.Printer.to_buffer(buffer);
     <p className="whitespace-pre font-mono text-green-500">
-      {value->Stepper.Value.to_string->React.string}
-    </p>
+      {buffer->Buffer.contents->React.string}
+    </p>;
   | `Expr(expr) =>
     let futures =
       expr
@@ -25,6 +29,6 @@ let make =
           <Object settings key={i->Belt.Int.toString} context expr onClick />
         )
       ->Belt.List.toArray;
-    <ul> futures->React.array </ul>
+    <ul> futures->React.array </ul>;
   };
 };

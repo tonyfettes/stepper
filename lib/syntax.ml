@@ -156,7 +156,9 @@ and Expr : sig
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  val pretty_print : ?shortKeyword:bool -> ?residue:bool -> ?prec:int -> t -> PPrint.document
+  val pretty_print :
+    ?short:bool -> ?residue:bool -> ?prec:int -> t -> PPrint.document
+
   val to_string : t -> string
   val to_pat : t -> Pat.t
   val to_value : t -> Value.t option
@@ -181,13 +183,14 @@ end = struct
     | Filter of Pat.t * Act.t * Gas.t * t
     | Residue of Act.t * Gas.t * int * t
 
-  let rec pretty_print ?(shortKeyword = true) ?(residue = false) ?(prec = 0) (expr : Expr.t) =
+  let rec pretty_print ?(short = true) ?(residue = false) ?(prec = 0)
+      (expr : Expr.t) =
     let taken_prec = Expr.take_prec ~residue expr in
     let pretty_print ?(residue = residue) ?(prec = taken_prec) =
       pretty_print ~residue ~prec
     in
     let prec_parens document =
-      if taken_prec < prec then PPrint.(parens (nest 1 document))
+      if taken_prec < prec then PPrint.(parens document)
       else PPrint.group document
     in
     match expr with
@@ -215,13 +218,18 @@ end = struct
         PPrint.(pretty_print e_l ^/^ string "*" ^/^ pretty_print e_r)
         |> prec_parens
     | Ap (e_l, e_r) ->
-        PPrint.(pretty_print e_l ^/^ parens (pretty_print ~prec:0 e_r))
+        PPrint.(
+          pretty_print e_l ^^ break 0 ^^ parens (pretty_print ~prec:0 e_r))
         |> prec_parens
     | Fun (x, e) ->
-        PPrint.(string "fun" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
+        PPrint.(
+          group (string "fun" ^/^ string x ^/^ string "->")
+          ^^ nest 2 (break 1 ^^ pretty_print e))
         |> prec_parens
     | Fix (x, e) ->
-        PPrint.(string "fix" ^/^ string x ^/^ string "->" ^/^ pretty_print e)
+        PPrint.(
+          group (string "fix" ^/^ string x ^/^ string "->")
+          ^^ nest 2 (break 1 ^^ pretty_print e))
         |> prec_parens
     | If (p, t, f) ->
         PPrint.(
@@ -237,11 +245,12 @@ end = struct
         |> prec_parens
     | Residue (a, g, l, e) ->
         if residue then
-          let keyword = to_keyword ~short:shortKeyword a g in
+          let keyword = to_keyword ~short a g in
           PPrint.(
             string keyword ^^ string "#"
             ^^ string (string_of_int l)
-            ^^ string "[" ^^ break 0 ^^ pretty_print ~prec:0 e ^^ break 0 ^^ string "]")
+            ^^ string "[" ^^ break 0 ^^ pretty_print ~prec:0 e ^^ break 0
+            ^^ string "]")
           |> prec_parens
         else pretty_print ~prec e
 
@@ -374,11 +383,30 @@ end
 and Value : sig
   type t = Int of int | Bool of bool | Fun of string * Expr.t
 
+  val pretty_print : ?prec:int -> t -> PPrint.document
   val to_string : t -> string
   val to_expr : t -> Expr.t
   val to_pat : t -> Pat.t
 end = struct
   type t = Int of int | Bool of bool | Fun of string * Expr.t
+
+  let take_prec (value : t) =
+    match value with Int _ | Bool _ -> 7 | Fun _ -> 0
+
+  let pretty_print ?(prec = 0) (value : t) =
+    let taken_prec = take_prec value in
+    let prec_parens document =
+      if taken_prec < prec then PPrint.(parens (nest 1 document))
+      else PPrint.group document
+    in
+    match value with
+    | Int int -> PPrint.string (string_of_int int)
+    | Bool bool -> PPrint.string (string_of_bool bool)
+    | Fun (x, e) ->
+        PPrint.(
+          string "fun" ^/^ string x ^/^ string "->"
+          ^/^ Expr.pretty_print ~prec:0 e)
+        |> prec_parens
 
   let to_string (value : t) =
     match value with

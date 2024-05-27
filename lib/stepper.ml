@@ -1,5 +1,6 @@
 module Lexer = Lexer
 module Parser = Parser
+module Printer = Printer
 include Syntax
 
 let parse (source : string) : Expr.t option =
@@ -193,7 +194,7 @@ module Context = struct
     | Residue of Act.t * Gas.t * int * t
 
   let take_prec = function
-    | Top -> 7
+    | Top -> 0
     | Eq_l _ | Eq_r _ -> 3
     | And_l _ | And_r _ -> 2
     | Or_l _ | Or_r _ -> 1
@@ -205,17 +206,20 @@ module Context = struct
     | Filter _ -> 0
     | Residue _ -> 0
 
-  let rec pretty_print ?(residue = false) ?(prec = 0) (context : t) =
+  let rec pretty_print ?(residue = false) ?(prec = 0) ?expr (context : t) =
     let taken_prec = take_prec context in
     let pretty_print ?(residue = residue) ?(prec = taken_prec) =
-      pretty_print ~residue ~prec
+      pretty_print ~residue ~prec ?expr
     in
     let expr_pretty_print ?(residue = residue) ?(prec = taken_prec) =
       Expr.pretty_print ~residue ~prec
     in
     let document =
       match context with
-      | Top -> PPrint.(parens (string "@"))
+      | Top -> (
+          match expr with
+          | None -> PPrint.(string "@")
+          | Some expr -> PPrint.(braces (expr_pretty_print expr)))
       | Eq_l (c, e) ->
           PPrint.(pretty_print c ^/^ string "==" ^/^ expr_pretty_print e)
       | Eq_r (e, c) ->
@@ -246,11 +250,12 @@ module Context = struct
           PPrint.(expr_pretty_print e ^/^ string "*" ^/^ pretty_print c)
       | Ap_l (c, e) ->
           PPrint.(
-            pretty_print c ^/^ PPrint.parens (expr_pretty_print ~prec:0 e))
+            pretty_print c ^^ break 0
+            ^^ PPrint.parens (expr_pretty_print ~prec:0 e))
       | Ap_r (e, c) ->
           PPrint.(
-            PPrint.parens (expr_pretty_print e)
-            ^/^ PPrint.parens (pretty_print ~prec:0 c))
+            expr_pretty_print e ^^ break 0
+            ^^ PPrint.parens (pretty_print ~prec:0 c))
       | If (c, t, f) ->
           PPrint.(
             group (string "if" ^/^ pretty_print c ^/^ string "then")
