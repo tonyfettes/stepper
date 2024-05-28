@@ -3,4 +3,5 @@
  (modules test)
  (inline_tests)
  (libraries stepper)
- (preprocess (pps ppx_expect)))
+ (preprocess
+  (pps ppx_expect)))

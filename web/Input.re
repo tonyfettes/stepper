@@ -8,7 +8,7 @@ let make = (~value, ~onChange: string => unit) => {
       value
       onChange={(value, _) => onChange(value)}
       basicSetup={"lineNumbers": false, "foldGutter": false}
-      extensions={[|stepper()|]}
+      extensions=[|stepper()|]
     />
   </div>;
 };

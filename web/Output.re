@@ -16,9 +16,7 @@ let make =
     </p>
   | `Value(value) =>
     let buffer = Buffer.create(42);
-    value
-    |> Stepper.Value.pretty_print
-    |> Stepper.Printer.to_buffer(buffer);
+    value |> Stepper.Value.pretty_print |> Stepper.Printer.to_buffer(buffer);
     <p className="whitespace-pre font-mono text-green-500">
       {buffer->Buffer.contents->React.string}
     </p>;
