@@ -99,10 +99,11 @@ let rec transition (exp : Expr.t) =
           match transition e_r with
           | `Error (err, exp) -> `Error (err, exp)
           | `Expr e_r -> `Expr (Ap (e_l, e_r))
-          | `Value e_r -> `Expr (Expr.subst e_b x e_r))
+          | `Value e_r -> `Expr (Expr.subst e_b x (Value.to_expr e_r)))
       | `Value e_l -> `Error (Mismatched_type, Ap (Value.to_expr e_l, e_r)))
   | Fun (x, e) -> `Value (Value.Fun (x, e))
-  | Fix (x, Fun (y, e)) -> `Expr Expr.(subst e x (Fun (y, Fix (x, e))))
+  | Fix (x, Fun (y, e)) ->
+      `Value (Value.Fun (y, Expr.subst e x (Fix (x, Fun (y, e)))))
   | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match transition e with
@@ -156,12 +157,12 @@ let rec eval (expr : Expr.t) :
       match (eval e_l, eval e_r) with
       | `Error (err, exp), _ -> `Error (err, exp)
       | `Value _, `Error (err, exp) -> `Error (err, exp)
-      | `Value (Fun (x, e)), `Value v_r -> eval (Expr.subst e x v_r)
+      | `Value (Fun (x, e)), `Value v_r -> eval (Expr.subst e x (Value.to_expr v_r))
       | `Value _, `Value _ -> `Error (Mismatched_type, expr))
   | Fun (x, e) -> `Value (Fun (x, e))
   | Fix (x, Fun (y, e)) ->
       let v = Value.Fun (y, Fix (x, e)) in
-      `Value (Fun (x, Expr.subst e x v))
+      `Value (Fun (x, Expr.subst e x (Value.to_expr v)))
   | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match eval e with

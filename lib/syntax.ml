@@ -37,7 +37,7 @@ module rec Pat : sig
 
   val to_string : t -> string
   val pretty_print : t -> PPrint.document
-  val subst : t -> string -> Value.t -> t
+  val subst : t -> string -> Expr.t -> t
   val matches : t -> Expr.t -> bool
 end = struct
   type t =
@@ -84,11 +84,11 @@ end = struct
 
   let pretty_print (pat : t) : PPrint.document = PPrint.string (to_string pat)
 
-  let rec subst (pat : t) (var : string) (value : Value.t) =
+  let rec subst (pat : t) (var : string) (value : Expr.t) =
     match pat with
     | Any -> Any
     | Val -> Val
-    | Var pat_var -> if pat_var == var then Value.to_pat value else Var pat_var
+    | Var pat_var -> if pat_var == var then Expr.to_pat value else Var pat_var
     | Int int -> Int int
     | Bool bool -> Bool bool
     | Eq (p_l, p_r) -> Eq (subst p_l var value, subst p_r var value)
@@ -164,7 +164,7 @@ and Expr : sig
   val to_value : t -> Value.t option
   val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
-  val subst : t -> string -> Value.t -> t
+  val subst : t -> string -> t -> t
 end = struct
   type t =
     | Var of string
@@ -330,10 +330,9 @@ end = struct
     | Residue (_, _, _, e) -> strip e
     | e -> e
 
-  let rec subst (body : t) (var : string) (value : Value.t) =
+  let rec subst (body : t) (var : string) (value : t) : t =
     match body with
-    | Var body_var ->
-        if body_var == var then Value.to_expr value else Var body_var
+    | Var body_var -> if body_var == var then value else Var body_var
     | Int int -> Int int
     | Bool bool -> Bool bool
     | Eq (d1, d2) ->
