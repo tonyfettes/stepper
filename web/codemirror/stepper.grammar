@@ -1,5 +1,5 @@
 @precedence {
-  ap
+  call
   unary
   add @left
   mul @left
@@ -44,7 +44,7 @@ pattern[@isGroup=Pattern] {
     keyword<"fun"> "$x" "->" expression
   } |
   Ap {
-    pattern !ap "(" pattern ")"
+    pattern !call "(" pattern ")"
   } |
   Arith {
     pattern !add ArithOp { "+" | "-" } pattern |
@@ -79,7 +79,7 @@ expression {
     keyword<"fix"> Identifier "->" expression
   } |
   Ap {
-    expression !ap "(" expression ")"
+    expression !call "(" expression ")"
   } |
   FilterExpression {
     FilterKeyword pattern keyword<"in"> expression
