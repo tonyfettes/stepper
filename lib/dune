@@ -2,7 +2,7 @@
  (name stepper)
  (package stepper)
  (libraries pprint)
- (modes byte melange))
+ (modes byte melange native))
 
 (menhir
  (modules parser))

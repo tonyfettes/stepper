@@ -34,6 +34,7 @@
   reason-react
   reason-react-ppx
   (ocaml-lsp-server :dev)
-  (ocamlformat :dev)))
+  (ocamlformat :dev)
+  (ppx_expect :with-test)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

@@ -18,6 +18,7 @@ depends: [
   "reason-react-ppx"
   "ocaml-lsp-server" {dev}
   "ocamlformat" {dev}
+  "ppx_expect" {with-test}
   "odoc" {with-doc}
 ]
 build: [
