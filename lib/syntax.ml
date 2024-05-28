@@ -75,7 +75,7 @@ end = struct
         Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
     | Mul (e_l, e_r) ->
         Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
-    | Ap (e_l, e_r) -> Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
+    | Ap (e_l, e_r) -> Printf.sprintf "%s%s" (to_string e_l) (to_string e_r)
     | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (Expr.to_string e)
     | Fun_any e -> Printf.sprintf "(fun $x -> %s)" (Expr.to_string e)
     | If (p, t, f) ->
@@ -270,7 +270,7 @@ end = struct
         Printf.sprintf "(%s - %s)" (to_string e_l) (to_string e_r)
     | Mul (e_l, e_r) ->
         Printf.sprintf "(%s * %s)" (to_string e_l) (to_string e_r)
-    | Ap (e_l, e_r) -> Printf.sprintf "%s(%s)" (to_string e_l) (to_string e_r)
+    | Ap (e_l, e_r) -> Printf.sprintf "%s%s" (to_string e_l) (to_string e_r)
     | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (to_string e)
     | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (to_string e)
     | If (p, t, f) ->
@@ -330,53 +330,52 @@ end = struct
     | Residue (_, _, _, e) -> strip e
     | e -> e
 
-  let rec subst (body : t) (var : string) (value : t) : t =
-    match body with
-    | Var body_var -> if body_var == var then value else Var body_var
+  let rec subst (expr : t) (x : string) (value : t) : t =
+    match expr with
+    | Var var -> if var = x then value else Var var
     | Int int -> Int int
     | Bool bool -> Bool bool
     | Eq (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         Eq (d1, d2)
     | And (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         And (d1, d2)
     | Or (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         Or (d1, d2)
     | Add (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         Add (d1, d2)
     | Sub (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         Sub (d1, d2)
     | Mul (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
+        let d1 = subst d1 x value in
+        let d2 = subst d2 x value in
         Mul (d1, d2)
-    | Ap (d1, d2) ->
-        let d1 = subst d1 var value in
-        let d2 = subst d2 var value in
-        Ap (d1, d2)
+    | Ap (e_l, e_r) ->
+        let e_l = subst e_l x value in
+        let e_r = subst e_r x value in
+        Ap (e_l, e_r)
     | Fun (fun_var, body) ->
-        if fun_var == var then Fun (fun_var, body)
-        else Fun (fun_var, subst body var value)
+        if fun_var == x then Fun (fun_var, body)
+        else Fun (fun_var, subst body x value)
     | Fix (fun_var, body) ->
-        if fun_var == var then Fix (fun_var, body)
-        else Fix (fun_var, subst body var value)
+        if fun_var == x then Fix (fun_var, body)
+        else Fix (fun_var, subst body x value)
     | If (p, t, f) ->
-        let p = subst p var value in
-        let t = subst t var value in
-        let f = subst f var value in
+        let p = subst p x value in
+        let t = subst t x value in
+        let f = subst f x value in
         If (p, t, f)
-    | Filter (p, a, g, e) ->
-        Filter (Pat.subst p var value, a, g, subst e var value)
-    | Residue (a, g, l, e) -> Residue (a, g, l, subst e var value)
+    | Filter (p, a, g, e) -> Filter (Pat.subst p x value, a, g, subst e x value)
+    | Residue (a, g, l, e) -> Residue (a, g, l, subst e x value)
 end
 
 and Value : sig

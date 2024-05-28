@@ -157,12 +157,12 @@ let rec eval (expr : Expr.t) :
       match (eval e_l, eval e_r) with
       | `Error (err, exp), _ -> `Error (err, exp)
       | `Value _, `Error (err, exp) -> `Error (err, exp)
-      | `Value (Fun (x, e)), `Value v_r -> eval (Expr.subst e x (Value.to_expr v_r))
+      | `Value (Fun (x, e)), `Value v_r ->
+          eval (Expr.subst e x (Value.to_expr v_r))
       | `Value _, `Value _ -> `Error (Mismatched_type, expr))
   | Fun (x, e) -> `Value (Fun (x, e))
   | Fix (x, Fun (y, e)) ->
-      let v = Value.Fun (y, Fix (x, e)) in
-      `Value (Fun (x, Expr.subst e x (Value.to_expr v)))
+      `Value (Value.Fun (y, Expr.subst e x (Fix (x, Fun (y, e)))))
   | Fix (x, e) -> `Error (Error.Mismatched_type, Fix (x, e))
   | If (e, t, f) -> (
       match eval e with
