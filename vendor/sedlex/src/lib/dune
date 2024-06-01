@@ -3,4 +3,5 @@
  (public_name sedlex)
  (wrapped false)
  (libraries gen)
- (flags :standard -w +A-4-9 -safe-string))
+ (modes byte native melange)
+ (flags :standard -w +A-4-9))

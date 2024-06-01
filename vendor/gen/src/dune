@@ -18,7 +18,7 @@
   (public_name gen)
   (wrapped false)
   (modules Gen GenLabels GenM GenClone GenMList GenM_intf Gen_intf GenLabels_intf GenShims_)
-  (flags :standard -warn-error -a+8 -safe-string -nolabels)
+  (flags :standard -warn-error -a+8 -nolabels)
   (ocamlopt_flags :standard (:include flambda.flags))
   (libraries seq)
   (modes byte native melange))
