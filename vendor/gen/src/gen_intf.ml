@@ -364,9 +364,6 @@ module type S = sig
     (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   (** Pretty print the content of the generator on a formatter. *)
 
-  val of_seq : 'a Seq.t -> 'a t
-  (** @since 1.0 *)
-
   val to_iter : 'a t -> 'a iter
   (** @since 1.0 *)
 end

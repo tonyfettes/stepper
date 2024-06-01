@@ -118,26 +118,6 @@ let to_gen l =
   in
   next
 
-let to_seq l0 : _ Seq.t =
-  let rec next l i ()=
-    match !l with
-    | Nil -> Seq.Nil
-    | Cons1 (x, l') ->
-        Seq.Cons (x, next l' i)
-    | Cons (a,n,l') ->
-        if i = !n then (
-          next l' 0 ()
-        ) else (
-          let y = a.(i) in
-          Seq.Cons (y, next l (i+1))
-        )
-    | Suspend gen ->
-        let node = _read_chunk l0 gen in
-        l := node; (* modify previous pointer *)
-        next l i ()
-  in
-  next l0.start 0
-
 let to_clonable l : 'a clonable =
   let rec make node i =
     let cur = ref node and i = ref i in

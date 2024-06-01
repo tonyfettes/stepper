@@ -91,16 +91,6 @@ val persistent_lazy :
     Optional parameters: see {!GenMList.of_gen_lazy}.
     @since 0.2.2 *)
 
-val persistent_to_seq : 'a t -> 'a Seq.t
-(** Same as {!persistent}, but returns a standard Seq.
-    @since 1.0 *)
-
-val persistent_lazy_to_seq :
-  ?caching:bool -> ?max_chunk_size:int ->
-  'a t -> 'a Seq.t
-(** Same as {!persistent_lazy}, but returns a standard Seq.
-    @since 1.0 *)
-
 val peek : 'a t -> ('a * 'a option) t
 (** [peek g] transforms the generator [g] into a generator
     of [x, Some next] if [x] was followed by [next] in [g], or [x, None] if [x]

@@ -58,8 +58,4 @@ val to_gen : 'a t -> 'a gen
 (** Iterate on the mlist. This function can be called many times without
     any problem, the mlist isn't consumable! *)
 
-val to_seq : 'a t -> 'a Seq.t
-(** Iterate on the mlist using the standard functional iterators.
-    @since 1.0 *)
-
 val to_clonable : 'a t -> 'a clonable

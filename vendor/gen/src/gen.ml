@@ -1950,19 +1950,6 @@ let persistent gen =
     Restart.to_list g' = [1;2;3;4;5;6;7;8;9;10]
 *)
 
-let persistent_to_seq gen : _ Seq.t =
-  let l = GenMList.of_gen gen in
-  GenMList.to_seq l
-
-(*$T
-  let g = 1--100_000 in \
-  let seq = persistent_to_seq g in \
-    (seq |> seq_take 100 |> seq_to_list = (1--100 |> to_list)) && \
-    (seq |> seq_take 200 |> seq_to_list = (1--200 |> to_list)) && \
-    (seq |> seq_take 80_000 |> seq_to_list = (1--80_000 |> to_list)) && \
-    (seq |> seq_take 50_000 |> seq_to_list = (1--50_000 |> to_list))
-*)
-
 (*$R
   let i = ref 0 in
   let gen () =
@@ -1983,19 +1970,6 @@ let persistent_lazy ?caching ?max_chunk_size gen =
   let g = 1--1_000_000_000 in let g' = persistent_lazy g in \
     (g' () |> take 100 |> to_list = (1--100 |> to_list)) && \
     (g' () |> take 200 |> to_list = (1--200 |> to_list))
-*)
-
-let persistent_lazy_to_seq ?caching ?max_chunk_size gen : _ Seq.t =
-  let l = GenMList.of_gen_lazy ?max_chunk_size ?caching gen in
-  GenMList.to_seq l
-
-(*$T
-  let g = 1--1_000_000_000 in \
-  let seq = persistent_lazy_to_seq g in \
-    (seq |> seq_take 100 |> seq_to_list = (1--100 |> to_list)) && \
-    (seq |> seq_take 200 |> seq_to_list = (1--200 |> to_list)) && \
-    (seq |> seq_take 80_000 |> seq_to_list = (1--80_000 |> to_list)) && \
-    (seq |> seq_take 50_000 |> seq_to_list = (1--50_000 |> to_list))
 *)
 
 let to_iter g yield = iter yield g
