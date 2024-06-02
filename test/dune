@@ -1,7 +1,3 @@
-(library
- (name stepper_test)
- (modules test)
- (inline_tests)
- (libraries stepper)
- (preprocess
-  (pps ppx_expect)))
+(tests
+ (names test)
+ (libraries alcotest stepper))

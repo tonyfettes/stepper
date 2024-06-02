@@ -1,6 +1,7 @@
 module Expr = Stepper.Expr
+module Forest = Stepper.Forest
 
-let%expect_test "recursive_function" =
+let test_recursive_function () =
   let program =
     Stepper.parse
       {|
@@ -17,11 +18,30 @@ let%expect_test "recursive_function" =
   let result =
     match result with
     | None -> "None"
-    | Some (`Error (error, expr)) ->
-        let error = Stepper.Error.to_string error in
-        let expr = Stepper.Expr.to_string expr in
-        Printf.sprintf "Error %s @ %s" error expr
-    | Some (`Value value) -> "Value " ^ Stepper.Value.to_string value
+    | Some value -> "Value " ^ Stepper.Value.to_string value
   in
-  print_string result;
-  [%expect {| Value 120 |}]
+  Alcotest.check Alcotest.string "same string" "Value 120" result
+
+let test_union_find () =
+  let forest = Stepper.Forest.create ~capacity:42 in
+  for _ = 0 to 41 do
+    Forest.add forest
+  done;
+  Forest.union forest 0 1;
+  Forest.union forest 1 2;
+  Alcotest.check Alcotest.int "parent of 0 = parent of 1" (Forest.find forest 0)
+    (Forest.find forest 1);
+  Alcotest.check Alcotest.int "parent of 0 = parent of 1" (Forest.find forest 1)
+    (Forest.find forest 2);
+  Alcotest.check Alcotest.int "parent of 3 is itself" 3 (Forest.find forest 3)
+
+let ( |:: ) a b = (a, b)
+
+let () =
+  Alcotest.run "Stepper"
+    [
+      "Recursive function"
+      |:: [ Alcotest.test_case "Factorial of 5" `Quick test_recursive_function ];
+      "Union find"
+      |:: [ Alcotest.test_case "0 union 1 union 2" `Quick test_union_find ];
+    ]
