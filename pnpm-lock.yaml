@@ -39,9 +39,6 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.13
         version: 0.5.13(tailwindcss@3.4.3)
-      '@tonyfettes/vite-plugin-melange':
-        specifier: ^2.4.0
-        version: 2.4.0
       '@types/react':
         specifier: ^18.3.3
         version: 18.3.3
@@ -60,6 +57,9 @@ importers:
       vite:
         specifier: ^5.2.12
         version: 5.2.12
+      vite-plugin-melange:
+        specifier: ^2.4.0
+        version: 2.4.0
 
 packages:
 
@@ -502,9 +502,6 @@ packages:
     resolution: {integrity: sha512-ADGcJ8dX21dVVHIwTRgzrcunY6YY9uSlAHHGVKvkA+vLc5qLwEszvKts40lx7z0qc4clpjclwLeK5rVCV2P/uw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
-
-  '@tonyfettes/vite-plugin-melange@2.4.0':
-    resolution: {integrity: sha512-mmUB4E2MYM6ZRhV+UcrfdoikmjW9xrWKGMMNHgCdbU+bSADd1ITcXlB4+18IQqYjHuz0o6MTo3yLCGwbVVy3hg==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -1108,6 +1105,9 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  vite-plugin-melange@2.4.0:
+    resolution: {integrity: sha512-nmsMJrIKrX93G3zggoCD59Di7ybyNisTTOt3uE978PFvogo6zaXR8MLnE4eOmsOp+KGF/Fh7/BTZIOraSJeG3A==}
+
   vite@5.2.12:
     resolution: {integrity: sha512-/gC8GxzxMK5ntBwb48pR32GGhENnjtY30G4A0jemunsBkiEZFw60s8InGpN8gkhHEkjnRK1aSAxeQgwvFhUHAA==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -1559,12 +1559,6 @@ snapshots:
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
       tailwindcss: 3.4.3
-
-  '@tonyfettes/vite-plugin-melange@2.4.0':
-    dependencies:
-      etag: 1.8.1
-      picocolors: 1.0.1
-      strip-ansi: 6.0.1
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -2174,6 +2168,12 @@ snapshots:
       picocolors: 1.0.1
 
   util-deprecate@1.0.2: {}
+
+  vite-plugin-melange@2.4.0:
+    dependencies:
+      etag: 1.8.1
+      picocolors: 1.0.1
+      strip-ansi: 6.0.1
 
   vite@5.2.12:
     dependencies:
