@@ -7,6 +7,7 @@
 (using menhir 2.1)
 
 (name stepper)
+(version 0026643-dirty)
 
 (generate_opam_files true)
 
@@ -33,8 +34,9 @@
   reason
   reason-react
   reason-react-ppx
+  ppx_deriving
   (ocaml-lsp-server :dev)
   (ocamlformat :dev)
-  (ppx_expect :with-test)))
+  (alcotest :with-test)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

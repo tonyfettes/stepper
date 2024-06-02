@@ -8,7 +8,7 @@ let make = () => {
   let updateResult = (expr: Stepper.Expr.t) => {
     let result =
       switch (Stepper.step(expr)) {
-      | `Error(error, expr) =>
+      | exception (Stepper.Error.Error(error, expr)) =>
         let expr = {
           let buffer = Buffer.create(42);
           expr
@@ -18,8 +18,8 @@ let make = () => {
         };
         Printf.sprintf("%s: %s", expr, error->Stepper.Error.to_string)
         ->`Error;
-      | `Value(value) => `Value(value)
-      | `Expr(expr) => `Expr(expr)
+      | Value(value) => `Value(value)
+      | Expr(expr) => `Expr(expr)
       };
     setResult(_ => result);
   };
@@ -47,7 +47,7 @@ let make = () => {
   let onStep = (context, expr) => {
     setHistory(history => [(context, expr), ...history]);
     switch (Stepper.transition(expr)) {
-    | `Error(error, expr) =>
+    | exception (Stepper.Error.Error(error, expr)) =>
       let message =
         Printf.sprintf(
           "%s: %s",
@@ -55,8 +55,8 @@ let make = () => {
           error->Stepper.Error.to_string,
         );
       setResult(_ => `Error(message));
-    | `Expr(expr) => expr |> Stepper.Context.compose(context) |> updateResult
-    | `Value(value) =>
+    | Expr(expr) => expr |> Stepper.Context.compose(context) |> updateResult
+    | Value(value) =>
       value
       |> Stepper.Value.to_expr
       |> Stepper.Context.compose(context)

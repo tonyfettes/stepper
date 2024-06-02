@@ -1,5 +1,7 @@
-node_modules
 _build/
 _opam/
 .merlin
+node_modules/
+parser.js
+output/
 dist/

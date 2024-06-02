@@ -2,7 +2,7 @@
 export default {
   content: [
     "./index.html",
-    "./web/**/*.re"
+    "./**/*.re"
   ],
   theme: {
     fontFamily: {

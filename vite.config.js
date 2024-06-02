@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import melangePlugin from "vite-plugin-melange";
+import melangePlugin from "@tonyfettes/vite-plugin-melange";
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -8,7 +8,7 @@ export default defineConfig({
     {
       enforce: 'pre',
       ...melangePlugin({
-        emitDir: "web",
+        emitDir: ".",
         buildCommand: "opam exec -- dune build @react",
         watchCommand: "opam exec -- dune build --watch @react",
       })
