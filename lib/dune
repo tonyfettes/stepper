@@ -1,7 +1,6 @@
 (library
  (name stepper)
  (modules :standard \ typer)
- (package stepper)
  (libraries pprint sedlex)
  (modes byte melange native))
 

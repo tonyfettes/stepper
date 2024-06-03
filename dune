@@ -1,26 +1,3 @@
 (vendored_dirs vendor)
 
 (dirs :standard \ node_modules)
-
-(rule
- (alias node_modules)
- (targets
-  (dir node_modules))
- (deps %{bin:npm} package.json)
- (action
-  (no-infer
-   (run %{bin:npm} install))))
-
-(melange.emit
- (target output)
- (alias react)
- (libraries
-  reason-react
-  stepper
-  melange.belt
-  melange-webapi
-  stepper_web)
- (promote (until-clean))
- (preprocess
-  (pps melange.ppx reason-react-ppx))
- (module_systems es6))

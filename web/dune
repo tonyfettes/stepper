@@ -1,23 +1,12 @@
-(rule
- (targets parser.js)
- (deps
-  %{bin:npm}
-  (alias ../node_modules)
-  syntax.grammar)
- (mode
-  (promote (until-clean)))
- (action
-  (no-infer
-   (progn
-    (run %{bin:npm} exec -- lezer-generator syntax.grammar -o parser)))))
-
-(library
- (name stepper_web)
+(melange.emit
+ (target _output)
+ (alias react)
  (libraries
-  reason-react
   stepper
+  reason-react
   melange.belt
   melange-webapi)
+ (promote (until-clean))
  (preprocess
   (pps melange.ppx reason-react-ppx))
- (modes melange))
+ (module_systems es6))
