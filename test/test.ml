@@ -1,5 +1,4 @@
 module Expr = Stepper.Expr
-module Forest = Stepper.Forest
 
 let test_recursive_function () =
   let program =
@@ -22,26 +21,33 @@ let test_recursive_function () =
   in
   Alcotest.check Alcotest.string "same string" "Value 120" result
 
-let test_union_find () =
-  let forest = Stepper.Forest.create ~capacity:42 in
-  for _ = 0 to 41 do
-    Forest.add forest
-  done;
-  Forest.union forest 0 1;
-  Forest.union forest 1 2;
-  Alcotest.check Alcotest.int "parent of 0 = parent of 1" (Forest.find forest 0)
-    (Forest.find forest 1);
-  Alcotest.check Alcotest.int "parent of 0 = parent of 1" (Forest.find forest 1)
-    (Forest.find forest 2);
-  Alcotest.check Alcotest.int "parent of 3 is itself" 3 (Forest.find forest 3)
+let test_type_inference (program : string) (expect : string) () =
+  let typer = Stepper.Typer.create ~capacity:42 in
+  let result =
+    match
+      program |> Stepper.parse |> Option.map (Stepper.Typer.infer typer)
+    with
+    | None -> "None"
+    | Some ty -> "Some " ^ Stepper.Typer.Type.to_string ty
+  in
+  Alcotest.check Alcotest.string "same string" ("Some " ^ expect) result
 
-let ( |:: ) a b = (a, b)
+let ( #> ) a b = (a, b)
 
 let () =
   Alcotest.run "Stepper"
     [
       "Recursive function"
-      |:: [ Alcotest.test_case "Factorial of 5" `Quick test_recursive_function ];
-      "Union find"
-      |:: [ Alcotest.test_case "0 union 1 union 2" `Quick test_union_find ];
+      #> [ Alcotest.test_case "Factorial of 5" `Quick test_recursive_function ];
+      "Type inference"
+      #> [
+           Alcotest.test_case "Infer 1 + 2" `Quick
+             (test_type_inference "1 + 2" "Int");
+           (* Alcotest.test_case "Infer id" `Quick *)
+           (*   (test_type_inference "(fun x -> x)" "('0) -> '0"); *)
+           (* Alcotest.test_case "Infer if b then x else y" `Quick *)
+           (*   (test_type_inference "(fun x -> fun y -> fun b -> if b then y else x)" "('0) -> ('0) -> (Bool) -> ('0)"); *)
+           Alcotest.test_case "Infer x -> y -> y x" `Quick
+             (test_type_inference "(fun x -> fun y -> y(x))" "");
+         ];
     ]

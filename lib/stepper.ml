@@ -1,7 +1,7 @@
 module Lexer = Lexer
 module Parser = Parser
 module Printer = Printer
-module Forest = Forest
+module Typer = Typer
 include Syntax
 
 let parse (source : string) : Expr.t option =

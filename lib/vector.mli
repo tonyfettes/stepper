@@ -4,6 +4,8 @@ val create : capacity:int -> 'a t
 (** [create ~capacity] creates a vector with capacity as [~capacity]. *)
 
 val length : 'a t -> int
+(** [length vector] returns the length of [vector]. *)
+
 val reserve : 'a t -> int -> unit
 val add : 'a t -> 'a -> unit
 val get : 'a t -> int -> 'a
