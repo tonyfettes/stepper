@@ -59,7 +59,8 @@ and Expr : sig
 
   val to_string : t -> string
   val to_pat : t -> Pat.t
-  val to_value : t -> Value.t option
+
+  val to_value : t -> Value.t
   val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
   val subst : t -> string -> t -> t

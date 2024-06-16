@@ -7,7 +7,7 @@ let make =
          | `Expr(list((Stepper.Context.t, Stepper.Expr.t)))
          | `Value(Stepper.Value.t)
        ],
-      ~onClick: (Stepper.Context.t, Stepper.Expr.t) => unit,
+      ~onClick: (Stepper.Context.t, Stepper__.Syntax.Expr.t) => unit,
     ) => {
   switch (value) {
   | `Error(value) =>

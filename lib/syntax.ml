@@ -161,7 +161,7 @@ and Expr : sig
 
   val to_string : t -> string
   val to_pat : t -> Pat.t
-  val to_value : t -> Value.t option
+  val to_value : t -> Value.t
   val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
   val subst : t -> string -> t -> t
@@ -255,9 +255,9 @@ end = struct
         else pretty_print ~prec e
 
   let rec to_string = function
-    | Var var -> var
-    | Int int -> string_of_int int
-    | Bool bool -> string_of_bool bool
+    | Var var -> Printf.sprintf "(%s)" var
+    | Int int -> Printf.sprintf "(%d)" int
+    | Bool bool -> Printf.sprintf "(%b)" bool
     | Eq (e_l, e_r) ->
         Printf.sprintf "(%s == %s)" (to_string e_l) (to_string e_r)
     | And (e_l, e_r) ->
@@ -300,14 +300,16 @@ end = struct
     | Filter (_, _, _, e) -> to_pat e
     | Residue (_, _, _, e) -> to_pat e
 
-  let to_value (expr : t) =
+  let to_value (expr : t) : Value.t =
     match expr with
-    | Int int -> Some (Value.Int int)
-    | Bool bool -> Some (Value.Bool bool)
-    | Fun (x, e) -> Some (Value.Fun (x, e))
+    | Int int -> Value.Int int
+    | Bool bool -> Value.Bool bool
+    | Fun (x, e) -> Value.Fun (x, e)
     | Var _ | Eq _ | And _ | Or _ | Add _ | Sub _ | Mul _ | Ap _ | Fix _ | If _
     | Filter _ | Residue _ ->
-        None
+        expr |> Expr.to_string
+        |> Printf.sprintf "%s: %s is not a value" __FUNCTION__
+        |> invalid_arg
 
   let rec take_prec ?(residue = false) (expr : t) =
     match expr with

@@ -8,7 +8,8 @@ let make = () => {
   let updateResult = (expr: Stepper.Expr.t) => {
     let result =
       switch (Stepper.step(expr)) {
-      | exception (Stepper.Error.Error(error, expr)) =>
+      | exception (Stepper.Unbound_variable(expr) as exn)
+      | exception (Stepper.Mismatched_type(expr) as exn) =>
         let expr = {
           let buffer = Buffer.create(42);
           expr
@@ -16,7 +17,15 @@ let make = () => {
           |> Stepper.Printer.to_buffer(buffer);
           Buffer.contents(buffer);
         };
-        Printf.sprintf("%s: %s", expr, error->Stepper.Error.to_string)
+        Printf.sprintf(
+          "%s: %s",
+          expr,
+          switch (exn) {
+          | Stepper.Unbound_variable(_) => "Unbound_variable"
+          | Stepper.Mismatched_type(_) => "Mismatched_type"
+          | _ => ""
+          },
+        )
         ->`Error;
       | Value(value) => `Value(value)
       | Expr(expr) => `Expr(expr)
@@ -47,19 +56,24 @@ let make = () => {
   let onStep = (context, expr) => {
     setHistory(history => [(context, expr), ...history]);
     switch (Stepper.transition(expr)) {
-    | exception (Stepper.Error.Error(error, expr)) =>
+    | exception (Stepper.Unbound_variable(expr) as exn)
+    | exception (Stepper.Mismatched_type(expr) as exn) =>
       let message =
         Printf.sprintf(
           "%s: %s",
           expr->Stepper.Expr.to_string,
-          error->Stepper.Error.to_string,
+          switch (exn) {
+          | Stepper.Unbound_variable(_) => "Unbound_variable"
+          | Stepper.Mismatched_type(_) => "Mismatched_type"
+          | _ => ""
+          },
         );
       setResult(_ => `Error(message));
-    | Expr(expr) => expr |> Stepper.Context.compose(context) |> updateResult
+    | Expr(expr) => expr |> Stepper.compose(context) |> updateResult
     | Value(value) =>
       value
       |> Stepper.Value.to_expr
-      |> Stepper.Context.compose(context)
+      |> Stepper.compose(context)
       |> updateResult
     };
   };

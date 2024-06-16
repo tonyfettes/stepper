@@ -6,10 +6,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@codemirror/language": "^6.10.1",
+    "@codemirror/language": "^6.10.2",
     "@lezer/highlight": "^1.2.0",
     "@lezer/lr": "^1.4.1",
-    "@uiw/react-codemirror": "^4.22.1",
+    "@uiw/react-codemirror": "^4.22.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -19,12 +19,12 @@
     "@tailwindcss/language-server": "^0.0.16",
     "@tailwindcss/typography": "^0.5.13",
     "@types/react": "^18.3.3",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
-    "vite": "^5.2.12",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.1",
     "vite-plugin-melange": "^2.4.0"
   },
-  "packageManager": "pnpm@9.1.4+sha512.9df9cf27c91715646c7d675d1c9c8e41f6fce88246f1318c1aa6a1ed1aeb3c4f032fcdf4ba63cc69c4fe6d634279176b5358727d8f2cc1e65b65f43ce2f8bfb0"
+  "packageManager": "pnpm@9.3.0+sha512.ee7b93e0c2bd11409c6424f92b866f31d3ea1bef5fbe47d3c7500cdc3c9668833d2e55681ad66df5b640c61fa9dc25d546efa54d76d7f8bf54b13614ac293631"
 }

@@ -2,22 +2,17 @@ module Lexer = Lexer
 module Parser = Parser
 module Printer = Printer
 module Typer = Typer
-include Syntax
+module Expr = Syntax.Expr
+module Act = Syntax.Act
+module Gas = Syntax.Gas
+module Pat = Syntax.Pat
+module Value = Syntax.Value
 
 let parse (source : string) : Expr.t option =
-  let buffer = Lexing.from_string source in
-  Parser.top Lexer.lex buffer
+  source |> Lexing.from_string |> Parser.top Lexer.lex
 
-module Error = struct
-  type t = Unbound_variable | Mismatched_type | Not_a_value
-
-  exception Error of t * Expr.t
-
-  let to_string = function
-    | Unbound_variable -> "Unbound variable"
-    | Mismatched_type -> "Mismatch type"
-    | Not_a_value -> "Not a value"
-end
+exception Unbound_variable of Expr.t
+exception Mismatched_type of Expr.t
 
 module Context = struct
   type t =
@@ -116,7 +111,7 @@ module Context = struct
             ^/^ string "in" ^/^ pretty_print c)
       | Residue (a, g, l, c) ->
           if residue then
-            let keyword = to_keyword a g in
+            let keyword = Syntax.to_keyword a g in
             PPrint.(
               string keyword ^^ string "#"
               ^^ string (string_of_int l)
@@ -151,117 +146,121 @@ module Context = struct
         let keyword = Syntax.to_keyword a g in
         Printf.sprintf "%s %s in %s" keyword (Pat.to_string p) (to_string c)
     | Residue (a, g, l, c) ->
-        let keyword = to_keyword a g in
+        let keyword = Syntax.to_keyword a g in
         Printf.sprintf "%s #%d in %s" keyword l (to_string c)
-
-  let rec decompose (exp : Expr.t) =
-    match exp with
-    | Var var -> (Top, Expr.Var var) :: []
-    | Int _ | Bool _ | Fun _ -> []
-    | Eq (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (Eq_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (Eq_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, Eq (e_l, e_r)) :: [] else cs
-    | And (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (And_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (And_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, And (e_l, e_r)) :: [] else cs
-    | Or (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (Or_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (Or_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, Or (e_l, e_r)) :: [] else cs
-    | Add (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (Add_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (Add_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, Add (e_l, e_r)) :: [] else cs
-    | Sub (e_l, e_r) ->
-        let c_l =
-          decompose e_l |> List.map @@ fun (c, e_l') -> (Sub_l (c, e_r), e_l')
-        in
-        let c_r =
-          decompose e_r |> List.map @@ fun (c, e_r') -> (Sub_r (e_l, c), e_r')
-        in
-        let cs = c_l @ c_r in
-        if cs = [] then (Top, Sub (e_l, e_r)) :: [] else cs
-    | Mul (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (Mul_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (Mul_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, Mul (e_l, e_r)) :: [] else cs
-    | Ap (e_l, e_r) ->
-        let c_l = decompose e_l in
-        let c_r = decompose e_r in
-        let cs =
-          List.map (fun (c, e_l') -> (Ap_l (c, e_r), e_l')) c_l
-          @ List.map (fun (c, e_r') -> (Ap_r (e_l, c), e_r')) c_r
-        in
-        if cs = [] then (Top, Ap (e_l, e_r)) :: [] else cs
-    | Fix (x, d) -> (Top, Expr.Fix (x, d)) :: []
-    | If (e, t, f) ->
-        let c = decompose e |> List.map (fun (c, e) -> (If (c, t, f), e)) in
-        if c = [] then (Top, If (e, t, f)) :: [] else c
-    | Filter (p, a, g, e) ->
-        let c =
-          decompose e |> List.map (fun (c, e) -> (Filter (p, a, g, c), e))
-        in
-        if c = [] then (Top, Filter (p, a, g, e)) :: [] else c
-    | Residue (a, g, l, e) ->
-        let c =
-          decompose e |> List.map (fun (c, e) -> (Residue (a, g, l, c), e))
-        in
-        if c = [] then (Top, Residue (a, g, l, e)) :: [] else c
-
-  let rec compose (ctx : t) (exp : Expr.t) =
-    match ctx with
-    | Top -> exp
-    | Eq_l (c_l, e_r) -> Eq (compose c_l exp, e_r)
-    | Eq_r (e_l, c_r) -> Eq (e_l, compose c_r exp)
-    | And_l (c_l, e_r) -> And (compose c_l exp, e_r)
-    | And_r (e_l, c_r) -> And (e_l, compose c_r exp)
-    | Or_l (c_l, e_r) -> Or (compose c_l exp, e_r)
-    | Or_r (e_l, c_r) -> Or (e_l, compose c_r exp)
-    | Add_l (c_l, e_r) -> Add (compose c_l exp, e_r)
-    | Add_r (e_l, c_r) -> Add (e_l, compose c_r exp)
-    | Sub_l (c_l, e_r) -> Sub (compose c_l exp, e_r)
-    | Sub_r (e_l, c_r) -> Sub (e_l, compose c_r exp)
-    | Mul_l (c_l, e_r) -> Mul (compose c_l exp, e_r)
-    | Mul_r (e_l, c_r) -> Mul (e_l, compose c_r exp)
-    | Ap_l (c_l, e_r) -> Ap (compose c_l exp, e_r)
-    | Ap_r (e_l, c_r) -> Ap (e_l, compose c_r exp)
-    | If (e, t, f) -> If (compose e exp, t, f)
-    | Filter (p, a, g, c) -> Filter (p, a, g, compose c exp)
-    | Residue (a, g, l, c) -> Residue (a, g, l, compose c exp)
 end
 
 module Result = struct
   type 'a t = Value of Value.t | Expr of 'a
 end
 
-let rec transition (exp : Expr.t) : Expr.t Result.t =
-  let error (error : Error.t) (expr : Expr.t) =
-    raise (Error.Error (error, expr))
-  in
+let rec decompose (exp : Expr.t) : (Context.t * Expr.t) List.t =
   match exp with
-  | Var var -> error Unbound_variable (Var var)
+  | Var var -> raise (Unbound_variable (Var var))
+  | Int _ -> []
+  | Bool _ -> []
+  | Fun _ -> []
+  | Eq (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.Eq_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.Eq_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, Eq (e_l, e_r)) :: [] else cs
+  | And (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.And_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.And_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, And (e_l, e_r)) :: [] else cs
+  | Or (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.Or_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.Or_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, Or (e_l, e_r)) :: [] else cs
+  | Add (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.Add_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.Add_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, Add (e_l, e_r)) :: [] else cs
+  | Sub (e_l, e_r) ->
+      let c_l =
+        decompose e_l
+        |> List.map @@ fun (c, e_l') -> (Context.Sub_l (c, e_r), e_l')
+      in
+      let c_r =
+        decompose e_r
+        |> List.map @@ fun (c, e_r') -> (Context.Sub_r (e_l, c), e_r')
+      in
+      let cs = c_l @ c_r in
+      if cs = [] then (Top, Sub (e_l, e_r)) :: [] else cs
+  | Mul (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.Mul_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.Mul_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, Mul (e_l, e_r)) :: [] else cs
+  | Ap (e_l, e_r) ->
+      let c_l = decompose e_l in
+      let c_r = decompose e_r in
+      let cs =
+        List.map (fun (c, e_l') -> (Context.Ap_l (c, e_r), e_l')) c_l
+        @ List.map (fun (c, e_r') -> (Context.Ap_r (e_l, c), e_r')) c_r
+      in
+      if cs = [] then (Top, Ap (e_l, e_r)) :: [] else cs
+  | Fix (x, d) -> (Top, Expr.Fix (x, d)) :: []
+  | If (e, t, f) ->
+      let c =
+        decompose e |> List.map (fun (c, e) -> (Context.If (c, t, f), e))
+      in
+      if c = [] then (Top, If (e, t, f)) :: [] else c
+  | Filter (p, a, g, e) ->
+      let c =
+        decompose e |> List.map (fun (c, e) -> (Context.Filter (p, a, g, c), e))
+      in
+      if c = [] then (Top, Filter (p, a, g, e)) :: [] else c
+  | Residue (a, g, l, e) ->
+      let c =
+        decompose e
+        |> List.map (fun (c, e) -> (Context.Residue (a, g, l, c), e))
+      in
+      if c = [] then (Top, Residue (a, g, l, e)) :: [] else c
+
+let rec compose (ctx : Context.t) (exp : Expr.t) : Expr.t =
+  match ctx with
+  | Top -> exp
+  | Eq_l (c_l, e_r) -> Eq (compose c_l exp, e_r)
+  | Eq_r (e_l, c_r) -> Eq (e_l, compose c_r exp)
+  | And_l (c_l, e_r) -> And (compose c_l exp, e_r)
+  | And_r (e_l, c_r) -> And (e_l, compose c_r exp)
+  | Or_l (c_l, e_r) -> Or (compose c_l exp, e_r)
+  | Or_r (e_l, c_r) -> Or (e_l, compose c_r exp)
+  | Add_l (c_l, e_r) -> Add (compose c_l exp, e_r)
+  | Add_r (e_l, c_r) -> Add (e_l, compose c_r exp)
+  | Sub_l (c_l, e_r) -> Sub (compose c_l exp, e_r)
+  | Sub_r (e_l, c_r) -> Sub (e_l, compose c_r exp)
+  | Mul_l (c_l, e_r) -> Mul (compose c_l exp, e_r)
+  | Mul_r (e_l, c_r) -> Mul (e_l, compose c_r exp)
+  | Ap_l (c_l, e_r) -> Ap (compose c_l exp, e_r)
+  | Ap_r (e_l, c_r) -> Ap (e_l, compose c_r exp)
+  | If (e, t, f) -> If (compose e exp, t, f)
+  | Filter (p, a, g, c) -> Filter (p, a, g, compose c exp)
+  | Residue (a, g, l, c) -> Residue (a, g, l, compose c exp)
+
+let rec transition (exp : Expr.t) : Expr.t Result.t =
+  match exp with
+  | Var var -> raise (Unbound_variable (Var var))
   | Int int -> Value (Int int)
   | Bool bool -> Value (Bool bool)
   | Eq (e_l, e_r) -> (
@@ -271,8 +270,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Eq (e_l, e_r))
           | Value (Int n_r) -> Expr (Bool (n_l = n_r))
-          | Value e_r -> error Mismatched_type (Eq (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Eq (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (Eq (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (Eq (Value.to_expr e_l, e_r))))
   | And (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (And (e_l, e_r))
@@ -280,8 +279,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (And (e_l, e_r))
           | Value (Bool b_r) -> Expr (Bool (b_l && b_r))
-          | Value e_r -> error Mismatched_type (And (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (And (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (And (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (And (Value.to_expr e_l, e_r))))
   | Or (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (Or (e_l, e_r))
@@ -289,8 +288,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Or (e_l, e_r))
           | Value (Bool b_r) -> Expr (Bool (b_l || b_r))
-          | Value e_r -> error Mismatched_type (Or (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Or (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (Or (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (Or (Value.to_expr e_l, e_r))))
   | Add (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (Add (e_l, e_r))
@@ -298,8 +297,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Add (e_l, e_r))
           | Value (Int n_r) -> Expr (Int (n_l + n_r))
-          | Value e_r -> error Mismatched_type (Add (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Add (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (Add (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (Add (Value.to_expr e_l, e_r))))
   | Sub (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (Sub (e_l, e_r))
@@ -307,8 +306,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Sub (e_l, e_r))
           | Value (Int n_r) -> Expr (Int (n_l - n_r))
-          | Value e_r -> error Mismatched_type (Sub (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Sub (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (Sub (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (Sub (Value.to_expr e_l, e_r))))
   | Mul (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (Mul (e_l, e_r))
@@ -316,8 +315,8 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Mul (e_l, e_r))
           | Value (Int n_r) -> Expr (Int (n_l * n_r))
-          | Value e_r -> error Mismatched_type (Mul (e_l, Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Mul (Value.to_expr e_l, e_r)))
+          | Value e_r -> raise (Mismatched_type (Mul (e_l, Value.to_expr e_r))))
+      | Value e_l -> raise (Mismatched_type (Mul (Value.to_expr e_l, e_r))))
   | Ap (e_l, e_r) -> (
       match transition e_l with
       | Expr e_l -> Expr (Ap (e_l, e_r))
@@ -325,16 +324,15 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
           match transition e_r with
           | Expr e_r -> Expr (Ap (e_l, e_r))
           | Value e_r -> Expr (Expr.subst e_b x (Value.to_expr e_r)))
-      | Value e_l -> error Mismatched_type (Ap (Value.to_expr e_l, e_r)))
+      | Value e_l -> raise (Mismatched_type (Ap (Value.to_expr e_l, e_r))))
   | Fun (x, e) -> Value (Fun (x, e))
-  | Fix (x, Fun (y, e)) -> Value (Fun (y, Expr.subst e x (Fix (x, Fun (y, e)))))
-  | Fix (x, e) -> error Mismatched_type (Fix (x, e))
+  | Fix (x, e) -> Expr (Expr.subst e x (Fix (x, e)))
   | If (e, t, f) -> (
       match transition e with
       | Expr e -> Expr (If (e, t, f))
       | Value (Bool true) -> Expr t
       | Value (Bool false) -> Expr f
-      | Value _ -> error Mismatched_type (If (e, t, f)))
+      | Value _ -> raise (Mismatched_type (If (e, t, f))))
   | Filter (p, a, g, e) -> (
       match transition e with
       | Value value -> Expr (Value.to_expr value)
@@ -345,51 +343,50 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
       | Expr exp -> Expr (Residue (a, g, l, exp)))
 
 let rec eval (expr : Expr.t) : Value.t =
-  let error (error : Error.t) (expr : Expr.t) = raise (Error.Error (error, expr)) in
   match expr with
-  | Var var -> error Unbound_variable (Var var)
+  | Var var -> raise (Unbound_variable (Var var))
   | Int int -> Int int
   | Bool bool -> Bool bool
   | Eq (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Int n_l, Int n_r -> Bool (n_l = n_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | And (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Bool b_l, Bool b_r -> Bool (b_l && b_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Or (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Bool b_l, Bool b_r -> Bool (b_l || b_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Add (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Int n_l, Int n_r -> Int (n_l + n_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Sub (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Int n_l, Int n_r -> Int (n_l - n_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Mul (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Int n_l, Int n_r -> Int (n_l * n_r)
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Ap (e_l, e_r) -> (
       match (eval e_l, eval e_r) with
       | Fun (x, e), v_r -> eval (Expr.subst e x (Value.to_expr v_r))
-      | _, _ -> error Mismatched_type expr)
+      | _, _ -> raise (Mismatched_type expr))
   | Fun (x, e) -> Fun (x, e)
   | Fix (x, Fun (y, e)) -> Fun (y, Expr.subst e x (Fix (x, Fun (y, e))))
-  | Fix (x, e) -> error Error.Mismatched_type (Fix (x, e))
+  | Fix (x, e) -> raise (Mismatched_type (Fix (x, e)))
   | If (e, t, f) -> (
       match eval e with
       | Bool true -> eval t
       | Bool false -> eval f
-      | _ -> error Mismatched_type expr)
+      | _ -> raise (Mismatched_type expr))
   | Filter (_, _, _, e) -> eval e
   | Residue (_, _, _, e) -> eval e
 
-let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
+let rec instrument (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
     (exp : Expr.t) =
   let wrap exp =
     if Pat.matches pat exp then Expr.Residue (act, gas, lvl, exp) else exp
@@ -402,68 +399,70 @@ let rec instr (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
       | Int int -> Int int
       | Bool bool -> Bool bool
       | Eq (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Eq (e_l, e_r))
       | And (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (And (e_l, e_r))
       | Or (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Or (e_l, e_r))
       | Add (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Add (e_l, e_r))
       | Ap (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Ap (e_l, e_r))
       | Sub (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Sub (e_l, e_r))
       | Mul (e_l, e_r) ->
-          let e_l = instr pat act gas lvl e_l in
-          let e_r = instr pat act gas lvl e_r in
+          let e_l = instrument pat act gas lvl e_l in
+          let e_r = instrument pat act gas lvl e_r in
           wrap (Mul (e_l, e_r))
       | Fun (x, e) -> Fun (x, e)
       | Fix (x, e) -> wrap (Fix (x, e))
       | If (e, t, f) ->
-          let e = instr pat act gas lvl e in
-          let t = instr pat act gas lvl t in
-          let f = instr pat act gas lvl f in
+          let e = instrument pat act gas lvl e in
+          let t = instrument pat act gas lvl t in
+          let f = instrument pat act gas lvl f in
           wrap (If (e, t, f))
       | Filter (p, a, g, e) ->
-          let e = instr pat act gas lvl e in
-          Filter (p, a, g, instr p a g (lvl + 1) e)
+          let e = instrument pat act gas lvl e in
+          Filter (p, a, g, instrument p a g (lvl + 1) e)
       | Residue (a, g, l, e) ->
-          let e = instr pat act gas lvl e in
+          let e = instrument pat act gas lvl e in
           Residue (a, g, l, e))
 
-let rec annot (act : Act.t) (lvl : int) (ctx : Context.t) =
+let rec annotate (act : Act.t) (lvl : int) (ctx : Context.t) : Act.t =
   match ctx with
   | Top -> act
-  | Eq_l (c, _) -> annot act lvl c
-  | Eq_r (_, c) -> annot act lvl c
-  | And_l (c, _) -> annot act lvl c
-  | And_r (_, c) -> annot act lvl c
-  | Or_l (c, _) -> annot act lvl c
-  | Or_r (_, c) -> annot act lvl c
-  | Add_l (c, _) -> annot act lvl c
-  | Add_r (_, c) -> annot act lvl c
-  | Sub_l (c, _) -> annot act lvl c
-  | Sub_r (_, c) -> annot act lvl c
-  | Mul_l (c, _) -> annot act lvl c
-  | Mul_r (_, c) -> annot act lvl c
-  | Ap_l (c, _) -> annot act lvl c
-  | Ap_r (_, c) -> annot act lvl c
-  | If (c, _, _) -> annot act lvl c
-  | Filter (_, _, _, c) -> annot act lvl c
-  | Residue (a, One, l, c) -> if l > lvl then annot a l c else annot act lvl c
-  | Residue (a, All, l, c) -> if l > lvl then annot a l c else annot act lvl c
+  | Eq_l (c, _) -> annotate act lvl c
+  | Eq_r (_, c) -> annotate act lvl c
+  | And_l (c, _) -> annotate act lvl c
+  | And_r (_, c) -> annotate act lvl c
+  | Or_l (c, _) -> annotate act lvl c
+  | Or_r (_, c) -> annotate act lvl c
+  | Add_l (c, _) -> annotate act lvl c
+  | Add_r (_, c) -> annotate act lvl c
+  | Sub_l (c, _) -> annotate act lvl c
+  | Sub_r (_, c) -> annotate act lvl c
+  | Mul_l (c, _) -> annotate act lvl c
+  | Mul_r (_, c) -> annotate act lvl c
+  | Ap_l (c, _) -> annotate act lvl c
+  | Ap_r (_, c) -> annotate act lvl c
+  | If (c, _, _) -> annotate act lvl c
+  | Filter (_, _, _, c) -> annotate act lvl c
+  | Residue (a, One, l, c) ->
+      if l > lvl then annotate a l c else annotate act lvl c
+  | Residue (a, All, l, c) ->
+      if l > lvl then annotate a l c else annotate act lvl c
 
 let rec decay (ctx : Context.t) =
   match ctx with
@@ -488,26 +487,27 @@ let rec decay (ctx : Context.t) =
   | Residue (a, All, l, c) -> Residue (a, All, l, decay c)
 
 let rec step (expr : Expr.t) : (Context.t * Expr.t) list Result.t =
-  let instrumented = instr Any Pause One 0 expr in
-  let decomposed = Context.decompose instrumented in
+  let instrumented = instrument Any Pause One 0 expr in
+  let decomposed = decompose instrumented in
   let annotated =
     decomposed
     |> List.map @@ fun (ctx, expr) ->
        match expr with
-       | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ -> (Act.Eval, ctx, expr)
+       | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ ->
+           (Act.Eval, decay ctx, expr)
        | _ ->
-           let act = annot Pause 0 ctx in
+           let act = annotate Pause 0 ctx in
            (act, decay ctx, expr)
   in
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annotated with
   | None -> (
       match annotated |> List.map (fun (_, c, e) -> (c, e)) with
-      | [] -> (
-          match Expr.to_value expr with
-          | None -> raise (Error.Error (Not_a_value, expr))
-          | Some value -> Value value)
+      | [] -> Value (Expr.to_value expr)
       | expr -> Expr expr)
   | Some (_, ctx, expr) -> (
       match transition expr with
-      | Value value -> Value value
-      | Expr exp -> step (Context.compose ctx exp))
+      | Value value ->
+          value |> Value.to_string
+          |> Printf.sprintf "Transition a value: %s"
+          |> failwith
+      | Expr expr -> step (compose ctx expr))
