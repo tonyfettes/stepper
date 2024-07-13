@@ -1,9 +1,10 @@
 (library
  (name stepper)
+ (wrapped false)
  (libraries pprint sedlex)
  (modes byte melange native))
 
 (menhir
- (modules parser))
+ (modules stepper_parser))
 
-(ocamllex lexer)
+(ocamllex stepper_lexer)

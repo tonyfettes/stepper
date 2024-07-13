@@ -1,7 +1,8 @@
-module Printer = Printer
-module Lexer = Lexer
-module Parser = Parser
-module Typer = Typer
+module Printer = Stepper_printer
+module Lexer = Stepper_lexer
+module Parser = Stepper_parser
+module Typer = Stepper_typer
+module Syntax = Stepper_syntax
 module Expr = Syntax.Expr
 module Value = Syntax.Value
 
@@ -26,5 +27,5 @@ end
 val decompose : Expr.t -> (Context.t * Expr.t) list
 val compose : Context.t -> Expr.t -> Expr.t
 val transition : Expr.t -> Expr.t Result.t
-val eval : Expr.t -> Value.t
+val evaluate : Expr.t -> Value.t
 val step : Expr.t -> (Context.t * Expr.t) list Result.t

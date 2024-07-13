@@ -1,5 +1,5 @@
 {
-open Parser
+open Stepper_parser
 
 exception Error of string
 }

@@ -1,5 +1,5 @@
 %{
-open Syntax
+open Stepper_syntax
 %}
 
 %token <int> INT
@@ -45,7 +45,7 @@ open Syntax
 %left TIMES
 %nonassoc LPAREN
 
-%start <Syntax.Expr.t option> top
+%start <Stepper_syntax.Expr.t option> top
 
 %%
 

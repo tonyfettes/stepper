@@ -1,3 +1,4 @@
+module Syntax = Stepper_syntax
 module Expr = Syntax.Expr
 
 module Type = struct

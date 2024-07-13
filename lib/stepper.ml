@@ -1,12 +1,13 @@
-module Lexer = Lexer
-module Parser = Parser
-module Printer = Printer
-module Typer = Typer
-module Expr = Syntax.Expr
-module Act = Syntax.Act
-module Gas = Syntax.Gas
-module Pat = Syntax.Pat
-module Value = Syntax.Value
+module Lexer = Stepper_lexer
+module Parser = Stepper_parser
+module Printer = Stepper_printer
+module Syntax = Stepper_syntax
+module Typer = Stepper_typer
+module Expr = Stepper_syntax.Expr
+module Act = Stepper_syntax.Act
+module Gas = Stepper_syntax.Gas
+module Pat = Stepper_syntax.Pat
+module Value = Stepper_syntax.Value
 
 let parse (source : string) : Expr.t option =
   source |> Lexing.from_string |> Parser.top Lexer.lex
@@ -342,49 +343,49 @@ let rec transition (exp : Expr.t) : Expr.t Result.t =
       | Value exp -> Expr (Value.to_expr exp)
       | Expr exp -> Expr (Residue (a, g, l, exp)))
 
-let rec eval (expr : Expr.t) : Value.t =
+let rec evaluate (expr : Expr.t) : Value.t =
   match expr with
   | Var var -> raise (Unbound_variable (Var var))
   | Int int -> Int int
   | Bool bool -> Bool bool
   | Eq (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Int n_l, Int n_r -> Bool (n_l = n_r)
       | _, _ -> raise (Mismatched_type expr))
   | And (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Bool b_l, Bool b_r -> Bool (b_l && b_r)
       | _, _ -> raise (Mismatched_type expr))
   | Or (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Bool b_l, Bool b_r -> Bool (b_l || b_r)
       | _, _ -> raise (Mismatched_type expr))
   | Add (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Int n_l, Int n_r -> Int (n_l + n_r)
       | _, _ -> raise (Mismatched_type expr))
   | Sub (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Int n_l, Int n_r -> Int (n_l - n_r)
       | _, _ -> raise (Mismatched_type expr))
   | Mul (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
+      match (evaluate e_l, evaluate e_r) with
       | Int n_l, Int n_r -> Int (n_l * n_r)
       | _, _ -> raise (Mismatched_type expr))
   | Ap (e_l, e_r) -> (
-      match (eval e_l, eval e_r) with
-      | Fun (x, e), v_r -> eval (Expr.subst e x (Value.to_expr v_r))
+      match (evaluate e_l, evaluate e_r) with
+      | Fun (x, e), v_r -> evaluate (Expr.subst e x (Value.to_expr v_r))
       | _, _ -> raise (Mismatched_type expr))
   | Fun (x, e) -> Fun (x, e)
   | Fix (x, Fun (y, e)) -> Fun (y, Expr.subst e x (Fix (x, Fun (y, e))))
   | Fix (x, e) -> raise (Mismatched_type (Fix (x, e)))
   | If (e, t, f) -> (
-      match eval e with
-      | Bool true -> eval t
-      | Bool false -> eval f
+      match evaluate e with
+      | Bool true -> evaluate t
+      | Bool false -> evaluate f
       | _ -> raise (Mismatched_type expr))
-  | Filter (_, _, _, e) -> eval e
-  | Residue (_, _, _, e) -> eval e
+  | Filter (_, _, _, e) -> evaluate e
+  | Residue (_, _, _, e) -> evaluate e
 
 let rec instrument (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
     (exp : Expr.t) =
