@@ -1,7 +1,7 @@
 [@react.component]
 let make:
   (
-    ~settings: Settings.t,
+    ~settings: StepperReactSettings.t,
     ~history: list((Stepper.Context.t, Stepper.Expr.t))
   ) =>
   React.element;

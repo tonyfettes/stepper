@@ -1,12 +1,9 @@
-(melange.emit
- (target _output)
- (alias react)
- (libraries
-  stepper
-  reason-react
-  melange.belt
-  melange-webapi)
- (promote (until-clean))
+(library
+ (name StepperReact)
+ (wrapped false)
+ (public_name stepper.react)
+ (libraries stepper reason-react melange.belt melange-webapi)
+ (melange.runtime_deps StepperReactInputImpl.tsx stepper.grammar)
+ (modes melange)
  (preprocess
-  (pps melange.ppx reason-react-ppx))
- (module_systems es6))
+  (pps melange.ppx reason-react-ppx)))

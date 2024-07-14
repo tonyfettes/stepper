@@ -1,5 +1,6 @@
 (library
  (name stepper)
+ (public_name stepper)
  (wrapped false)
  (libraries pprint sedlex)
  (modes byte melange native))

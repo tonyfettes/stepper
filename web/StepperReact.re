@@ -2,35 +2,50 @@
 let make = () => {
   let (input, setInput) = React.useState(() => "");
   let (history, setHistory) = React.useState(() => []);
-  let (result, setResult) = React.useState(() => `Expr([]));
-  let (settings, setSettings) = React.useState(() => Settings.default);
+  let (result, setResult) = React.useState(() => `Waiting);
+  let (settings, setSettings) =
+    React.useState(() => {StepperReactSettings.showResidue: false});
+  let (worker, setWorker) = React.useState(() => None);
+  let (trigger, setTrigger) = React.useState(() => 0);
+
+  React.useEffect1(
+    () => {
+      let worker =
+        Webapi.Dom.Worker.makeWithUrl(
+          Webapi.Url.makeWith(
+            "./StepperWorker.js",
+            ~base=[%mel.raw "import.meta.url"],
+          ),
+        );
+      let listener = (event: Webapi.Dom.MessageEvent.t) => {
+        let data = event |> Webapi.Dom.MessageEvent.data;
+        setResult(_ => data);
+      };
+      worker |> Webapi.Dom.Worker.addMessageEventListener(listener);
+      switch (result) {
+      | `Pending(expr) => worker |> Webapi.Dom.Worker.postMessage(expr)
+      | _ => ()
+      };
+      setWorker(_ => Some(worker));
+      Some(
+        () =>
+          worker |> Webapi.Dom.Worker.removeMessageEventListener(listener),
+      );
+    },
+    [|trigger|],
+  );
 
   let updateResult = (expr: Stepper.Expr.t) => {
-    let result =
-      switch (Stepper.step(expr)) {
-      | exception (Stepper.Unbound_variable(expr) as exn)
-      | exception (Stepper.Mismatched_type(expr) as exn) =>
-        let expr = {
-          let buffer = Buffer.create(42);
-          expr
-          |> Stepper.Expr.pretty_print
-          |> Stepper.Printer.to_buffer(buffer);
-          Buffer.contents(buffer);
-        };
-        Printf.sprintf(
-          "%s: %s",
-          expr,
-          switch (exn) {
-          | Stepper.Unbound_variable(_) => "Unbound_variable"
-          | Stepper.Mismatched_type(_) => "Mismatched_type"
-          | _ => ""
-          },
-        )
-        ->`Error;
-      | Value(value) => `Value(value)
-      | Expr(expr) => `Expr(expr)
-      };
-    setResult(_ => result);
+    switch (worker, result) {
+    | (None, _) => setResult(_ => `Pending(expr))
+    | (Some(worker), `Value(_) | `Expr(_) | `Error(_) | `Waiting) =>
+      setResult(_ => `Pending(expr));
+      worker |> Webapi.Dom.Worker.postMessage(expr);
+    | (Some(worker), `Pending(_)) =>
+      setResult(_ => `Pending(expr));
+      worker |> Webapi.Dom.Worker.terminate();
+      setTrigger(trigger => trigger + 1);
+    };
   };
 
   let inputResult = (input: string) => {
@@ -79,7 +94,7 @@ let make = () => {
   };
 
   <>
-    <Input
+    <StepperReactInput
       value=input
       onChange={input => {
         Dom.Storage.localStorage
@@ -89,11 +104,11 @@ let make = () => {
         inputResult(input);
       }}
     />
-    <Settings
+    <StepperReactSettings
       value=settings
       onChange={settings => setSettings(_ => settings)}
     />
-    <History settings history={history->List.rev} />
-    <Output settings value=result onClick=onStep />
+    <StepperReactHistory settings history={history->List.rev} />
+    <StepperReactOutput settings value=result onClick=onStep />
   </>;
 };

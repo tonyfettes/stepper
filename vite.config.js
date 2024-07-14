@@ -1,21 +1,31 @@
 import { defineConfig } from "vite";
 import melangePlugin from "vite-plugin-melange";
 import react from '@vitejs/plugin-react';
+import { lezer } from '@lezer/generator/rollup';
 
 export default defineConfig({
+  build: {
+    minify: false,
+  },
   base: './',
-  plugins: [
-    {
-      enforce: 'pre',
-      ...melangePlugin({
+  worker: {
+    plugins: () => [
+      melangePlugin({
         buildTarget: "_output",
-        emitDir: "web",
-        buildCommand: "opam exec -- dune build @react",
-        watchCommand: "opam exec -- dune build --watch @react",
-      })
-    },
+        buildCommand: "opam exec -- dune build @melange",
+        watchCommand: "opam exec -- dune build --watch @melange",
+      }),
+    ]
+  },
+  plugins: [
+    lezer({ exportName: 'parser' }),
+    melangePlugin({
+      buildTarget: "_output",
+      buildCommand: "opam exec -- dune build @melange",
+      watchCommand: "opam exec -- dune build --watch @melange",
+    }),
     react({
-      include: /\.(js|jsx|ts|tsx|re|rei|ml|mli)$/
+      include: /\.(js|jsx|ts|tsx|re|rei|ml|mli|grammar)$/
     }),
   ],
   server: {

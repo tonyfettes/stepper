@@ -1,8 +1,10 @@
 [@react.component]
 let make:
   (
-    ~settings: Settings.t,
+    ~settings: StepperReactSettings.t,
     ~value: [<
+              | `Waiting
+              | `Pending(Stepper.Expr.t)
               | `Error(string)
               | `Expr(list((Stepper.Context.t, Stepper.Expr.t)))
               | `Value(Stepper.Value.t)

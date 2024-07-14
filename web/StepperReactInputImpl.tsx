@@ -1,8 +1,8 @@
-import React from 'react';
+import * as React from 'react';
 
 const LazyCodeMirror = React.lazy(async () => {
   const CodeMirror = await import("@uiw/react-codemirror");
-  const { parser } = await import("./parser");
+  const { parser } = await import("./stepper.grammar");
   const { styleTags, tags: t } = await import("@lezer/highlight");
   const { LRLanguage, LanguageSupport } = await import("@codemirror/language");
   const language = LRLanguage.define({
@@ -46,4 +46,4 @@ const Input = ({ value, onChange }) => {
   );
 };
 
-export default Input;
+export default Input

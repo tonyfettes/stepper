@@ -1,9 +1,9 @@
 [@react.component]
-let make = (~settings: Settings.t, ~history) => {
+let make = (~settings: StepperReactSettings.t, ~history) => {
   let history =
     history
     ->Belt.List.mapWithIndex((i, (context, expr)) =>
-        <Object
+        <StepperReactObject
           settings
           key={i->Belt.Int.toString}
           context

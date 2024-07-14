@@ -1,7 +1,7 @@
 [@react.component]
 let make =
     (
-      ~settings: Settings.t,
+      ~settings: StepperReactSettings.t,
       ~context: Stepper.Context.t,
       ~expr: Stepper.Expr.t,
       ~onClick,
@@ -13,10 +13,10 @@ let make =
     |> Stepper.Context.pretty_print(~residue=settings.showResidue, ~expr)
     |> Stepper.Printer.to_buffer(buffer);
     let string = buffer |> Buffer.contents;
-    switch (string |> String.split_on_char('{')) {
-    | [prefix, string] =>
-      switch (string |> String.split_on_char('}')) {
-      | [middle, suffix] => (prefix, middle, suffix)
+    switch (string |> Js.String.split(~sep="{")) {
+    | [|prefix, string|] =>
+      switch (string |> Js.String.split(~sep="}")) {
+      | [|middle, suffix|] => (prefix, middle, suffix)
       | _ => failwith(Printf.sprintf("Invalid context: %s", string))
       }
     | _ => failwith(Printf.sprintf("Invalid context: %s", string))

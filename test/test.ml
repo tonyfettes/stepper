@@ -13,7 +13,7 @@ let test_recursive_function () =
       in
       fac(5)|}
   in
-  let result = program |> Option.map Stepper.eval in
+  let result = program |> Option.map Stepper.evaluate in
   let result =
     match result with
     | None -> "None"

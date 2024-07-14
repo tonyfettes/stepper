@@ -1,3 +1,12 @@
 (vendored_dirs vendor)
 
 (dirs :standard \ node_modules)
+
+(melange.emit
+ (target _output)
+ (alias melange)
+ (promote (until-clean))
+ (module_systems es6)
+ (libraries stepper.react reason-react)
+ (preprocess
+  (pps melange.ppx reason-react-ppx)))

@@ -1,15 +1,25 @@
 [@react.component]
 let make =
     (
-      ~settings: Settings.t,
+      ~settings: StepperReactSettings.t,
       ~value: [<
+         | `Waiting
+         | `Pending(Stepper.Expr.t)
          | `Error(string)
          | `Expr(list((Stepper.Context.t, Stepper.Expr.t)))
          | `Value(Stepper.Value.t)
        ],
-      ~onClick: (Stepper.Context.t, Stepper__.Syntax.Expr.t) => unit,
-    ) => {
+      ~onClick: (Stepper.Context.t, Stepper.Syntax.Expr.t) => unit,
+    ) =>
   switch (value) {
+  | `Waiting =>
+    <p className="whitespace-pre font-mono text-gray-500">
+      "Waiting for input..."->React.string
+    </p>
+  | `Pending(_) =>
+    <p className="whitespace-pre font-mono text-gray-500">
+      "Pending"->React.string
+    </p>
   | `Error(value) =>
     <p className="whitespace-pre font-mono text-red-500">
       value->React.string
@@ -24,9 +34,14 @@ let make =
     let futures =
       expr
       ->Belt.List.mapWithIndex((i, (context, expr)) =>
-          <Object settings key={i->Belt.Int.toString} context expr onClick />
+          <StepperReactObject
+            settings
+            key={i->Belt.Int.toString}
+            context
+            expr
+            onClick
+          />
         )
       ->Belt.List.toArray;
     <ul> futures->React.array </ul>;
   };
-};
