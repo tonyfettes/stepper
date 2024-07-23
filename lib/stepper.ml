@@ -487,8 +487,12 @@ let rec decay (ctx : Context.t) =
   | Residue (_, One, _, c) -> decay c
   | Residue (a, All, l, c) -> Residue (a, All, l, decay c)
 
-let rec step (expr : Expr.t) : (Context.t * Expr.t) list Result.t =
+let rec step ?(limit : int = 1024) (expr : Expr.t) :
+    (Context.t * Expr.t) list Result.t =
+  if Int.equal limit 0 then raise Stack_overflow;
+  expr |> Expr.to_string |> Printf.printf "step: %s\n%!";
   let instrumented = instrument Any Pause One 0 expr in
+  instrumented |> Expr.to_string |> Printf.printf "instrumented: %s\n%!";
   let decomposed = decompose instrumented in
   let annotated =
     decomposed
@@ -511,4 +515,4 @@ let rec step (expr : Expr.t) : (Context.t * Expr.t) list Result.t =
           value |> Value.to_string
           |> Printf.sprintf "Transition a value: %s"
           |> failwith
-      | Expr expr -> step (compose ctx expr))
+      | Expr expr -> step ~limit:(limit - 1) (compose ctx expr))

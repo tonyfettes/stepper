@@ -37,13 +37,10 @@ pattern[@isGroup=Pattern] {
   "$e" | "$v" |
   Integer |
   Identifier |
-  Fun {
+  Function {
     keyword<"fun"> Identifier "->" expression
   } |
-  FunAny {
-    keyword<"fun"> "$x" "->" expression
-  } |
-  Ap {
+  Application {
     pattern !call "(" pattern ")"
   } |
   Arith {
@@ -64,21 +61,21 @@ expression {
   Identifier |
   Boolean |
   Let {
-    keyword<"let"> Identifier "=" expression keyword<"in"> expression
+    LetStatement { keyword<"let"> Identifier "=" expression } keyword<"in"> expression
   } |
   LetRec {
-    keyword<"let"> keyword<"rec"> Identifier "=" expression keyword<"in"> expression
+    LetRecStatement { keyword<"let"> keyword<"rec"> Identifier "=" expression } keyword<"in"> expression
   } |
   If {
     keyword<"if"> expression keyword<"then"> expression keyword<"else"> expression
   } |
-  Fun {
+  Function {
     keyword<"fun"> Identifier "->" expression
   } |
   Fix {
     keyword<"fix"> Identifier "->" expression
   } |
-  Ap {
+  Application {
     expression !call "(" expression ")"
   } |
   FilterExpression {

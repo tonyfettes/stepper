@@ -2,7 +2,7 @@
 let make = () => {
   let (input, setInput) = React.useState(() => "");
   let (history, setHistory) = React.useState(() => []);
-  let (result, setResult) = React.useState(() => `Waiting);
+  let (result, setResult) = React.useState(() => StepperResult.Waiting);
   let (settings, setSettings) =
     React.useState(() => {StepperReactSettings.showResidue: false});
   let (worker, setWorker) = React.useState(() => None);
@@ -18,12 +18,13 @@ let make = () => {
           ),
         );
       let listener = (event: Webapi.Dom.MessageEvent.t) => {
-        let data = event |> Webapi.Dom.MessageEvent.data;
+        let data: StepperResult.t = event |> Webapi.Dom.MessageEvent.data;
         setResult(_ => data);
       };
       worker |> Webapi.Dom.Worker.addMessageEventListener(listener);
       switch (result) {
-      | `Pending(expr) => worker |> Webapi.Dom.Worker.postMessage(expr)
+      | StepperResult.Pending(expr) =>
+        worker |> Webapi.Dom.Worker.postMessage(expr)
       | _ => ()
       };
       setWorker(_ => Some(worker));
@@ -37,12 +38,12 @@ let make = () => {
 
   let updateResult = (expr: Stepper.Expr.t) => {
     switch (worker, result) {
-    | (None, _) => setResult(_ => `Pending(expr))
-    | (Some(worker), `Value(_) | `Expr(_) | `Error(_) | `Waiting) =>
-      setResult(_ => `Pending(expr));
+    | (None, _) => setResult(_ => Pending(expr))
+    | (Some(worker), Value(_) | Expr(_) | Error(_) | Waiting) =>
+      setResult(_ => Pending(expr));
       worker |> Webapi.Dom.Worker.postMessage(expr);
-    | (Some(worker), `Pending(_)) =>
-      setResult(_ => `Pending(expr));
+    | (Some(worker), Pending(_)) =>
+      setResult(_ => Pending(expr));
       worker |> Webapi.Dom.Worker.terminate();
       setTrigger(trigger => trigger + 1);
     };
@@ -51,9 +52,10 @@ let make = () => {
   let inputResult = (input: string) => {
     switch (Stepper.parse(input)) {
     | exception (Stepper.Lexer.Error(message)) =>
-      setResult(_ => `Error("Lexing error: " ++ message))
+      setResult(_ => Error("Lexing error: " ++ message))
     | exception Stepper.Parser.Error
-    | None => setResult(_ => `Error("Syntax error"))
+    | exception _
+    | None => setResult(_ => Error("Syntax error"))
     | Some(expr) => updateResult(expr)
     };
   };
@@ -83,7 +85,7 @@ let make = () => {
           | _ => ""
           },
         );
-      setResult(_ => `Error(message));
+      setResult(_ => Error(message));
     | Expr(expr) => expr |> Stepper.compose(context) |> updateResult
     | Value(value) =>
       value
@@ -108,7 +110,7 @@ let make = () => {
       value=settings
       onChange={settings => setSettings(_ => settings)}
     />
-    <StepperReactHistory settings history={history->List.rev} />
+    <StepperReactHistory settings history={history->Belt.List.reverse} />
     <StepperReactOutput settings value=result onClick=onStep />
   </>;
 };

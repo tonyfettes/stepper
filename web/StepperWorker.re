@@ -2,7 +2,7 @@ Webapi.Dom.Window.setOnMessage(
   [%mel.raw "self"],
   (event: Webapi.Dom.MessageEvent.t) => {
     let expr = event |> Webapi.Dom.MessageEvent.data;
-    let result =
+    let result: StepperResult.t =
       switch (Stepper.step(expr)) {
       | exception (Stepper.Unbound_variable(expr) as exn)
       | exception (Stepper.Mismatched_type(expr) as exn) =>
@@ -22,9 +22,9 @@ Webapi.Dom.Window.setOnMessage(
           | _ => ""
           },
         )
-        ->`Error;
-      | Value(value) => `Value(value)
-      | Expr(expr) => `Expr(expr)
+        ->Error;
+      | Value(value) => Value(value)
+      | Expr(expr) => Expr(expr)
       };
     [%mel.raw "self"] |> Webapi.Dom.Window.postMessage(result);
   },

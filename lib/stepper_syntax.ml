@@ -233,8 +233,11 @@ end = struct
         |> prec_parens
     | If (p, t, f) ->
         PPrint.(
-          string "if" ^/^ pretty_print p ^/^ string "then" ^/^ pretty_print t
-          ^/^ string "else" ^/^ pretty_print f)
+          group
+            (group (string "if" ^/^ pretty_print p ^/^ string "then")
+            ^^ nest 2 (break 1 ^^ pretty_print t)
+            ^/^ string "else"
+            ^^ nest 2 (break 1 ^^ pretty_print f)))
         |> prec_parens
     | Filter (p, a, g, e) ->
         let keyword = to_keyword a g in
