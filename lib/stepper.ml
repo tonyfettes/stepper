@@ -487,13 +487,36 @@ let rec decay (ctx : Context.t) =
   | Residue (_, One, _, c) -> decay c
   | Residue (a, All, l, c) -> Residue (a, All, l, decay c)
 
+let rec optimize (expr : Expr.t) : Expr.t =
+  match expr with
+  | Var var -> Var var
+  | Int int -> Int int
+  | Bool bool -> Bool bool
+  | Eq (e_l, e_r) -> Eq (optimize e_l, optimize e_r)
+  | And (e_l, e_r) -> And (optimize e_l, optimize e_r)
+  | Or (e_l, e_r) -> Or (optimize e_l, optimize e_r)
+  | Add (e_l, e_r) -> Add (optimize e_l, optimize e_r)
+  | Sub (e_l, e_r) -> Sub (optimize e_l, optimize e_r)
+  | Mul (e_l, e_r) -> Mul (optimize e_l, optimize e_r)
+  | Ap (e_l, e_r) -> Ap (optimize e_l, optimize e_r)
+  | Fun (x, e) -> Fun (x, optimize e)
+  | Fix (x, e) -> Fix (x, optimize e)
+  | If (e_c, e_t, e_f) -> If (optimize e_c, optimize e_t, optimize e_f)
+  | Filter (p, a, g, e) -> Filter (p, a, g, optimize e)
+  | Residue (a_o, g_o, l_o, Residue (a_i, g_i, l_i, e)) ->
+      if l_o > l_i then optimize (Residue (a_o, g_o, l_o, optimize e))
+      else optimize (Residue (a_i, g_i, l_i, optimize e))
+  | Residue (a, g, l, e) -> Residue (a, g, l, optimize e)
+
 let rec step ?(limit : int = 1024) (expr : Expr.t) :
     (Context.t * Expr.t) list Result.t =
   if Int.equal limit 0 then raise Stack_overflow;
   expr |> Expr.to_string |> Printf.printf "step: %s\n%!";
   let instrumented = instrument Any Pause One 0 expr in
   instrumented |> Expr.to_string |> Printf.printf "instrumented: %s\n%!";
-  let decomposed = decompose instrumented in
+  let optimized = optimize instrumented in
+  optimized |> Expr.to_string |> Printf.printf "optimized: %s\n%!";
+  let decomposed = decompose optimized in
   let annotated =
     decomposed
     |> List.map @@ fun (ctx, expr) ->
