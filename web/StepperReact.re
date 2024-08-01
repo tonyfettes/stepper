@@ -38,7 +38,9 @@ let make = () => {
 
   let updateResult = (expr: Stepper.Expr.t) => {
     switch (worker, result) {
-    | (None, _) => setResult(_ => Pending(expr))
+    | (None, _) =>
+      setResult(_ => Pending(expr));
+      setTrigger(trigger => trigger + 1);
     | (Some(worker), Value(_) | Expr(_) | Error(_) | Waiting) =>
       setResult(_ => Pending(expr));
       worker |> Webapi.Dom.Worker.postMessage(expr);
