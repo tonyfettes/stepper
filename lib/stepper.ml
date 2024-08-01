@@ -504,8 +504,8 @@ let rec optimize (expr : Expr.t) : Expr.t =
   | If (e_c, e_t, e_f) -> If (optimize e_c, optimize e_t, optimize e_f)
   | Filter (p, a, g, e) -> Filter (p, a, g, optimize e)
   | Residue (a_o, g_o, l_o, Residue (a_i, g_i, l_i, e)) ->
-      if l_o > l_i then optimize (Residue (a_o, g_o, l_o, optimize e))
-      else optimize (Residue (a_i, g_i, l_i, optimize e))
+      if l_o > l_i then optimize (Residue (a_o, g_o, l_o, e))
+      else optimize (Residue (a_i, g_i, l_i, e))
   | Residue (a, g, l, e) -> Residue (a, g, l, optimize e)
 
 let rec step ?(limit : int = 1024) (expr : Expr.t) :
