@@ -1,9 +1,10 @@
 Webapi.Dom.Window.setOnMessage(
   [%mel.raw "self"],
   (event: Webapi.Dom.MessageEvent.t) => {
-    let expr = event |> Webapi.Dom.MessageEvent.data;
+    let data: StepperWorkerMessage.t =
+      event |> Webapi.Dom.MessageEvent.data;
     let result: StepperResult.t =
-      switch (Stepper.step(expr)) {
+      switch (Stepper.step(~opt=data.optimize, data.expr)) {
       | exception (Stepper.Unbound_variable(expr) as exn)
       | exception (Stepper.Mismatched_type(expr) as exn) =>
         let expr = {

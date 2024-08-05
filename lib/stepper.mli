@@ -28,4 +28,4 @@ val decompose : Expr.t -> (Context.t * Expr.t) list
 val compose : Context.t -> Expr.t -> Expr.t
 val transition : Expr.t -> Expr.t Result.t
 val evaluate : Expr.t -> Value.t
-val step : ?limit:int -> Expr.t -> (Context.t * Expr.t) list Result.t
+val step : ?limit:int -> ?opt:bool -> Expr.t -> (Context.t * Expr.t) list Result.t

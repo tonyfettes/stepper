@@ -508,15 +508,17 @@ let rec optimize (expr : Expr.t) : Expr.t =
       else optimize (Residue (a_i, g_i, l_i, e))
   | Residue (a, g, l, e) -> Residue (a, g, l, optimize e)
 
-let rec step ?(limit : int = 1024) (expr : Expr.t) :
+let rec step ?(limit : int = 1024) ?(opt : bool = true) (expr : Expr.t) :
     (Context.t * Expr.t) list Result.t =
   if Int.equal limit 0 then raise Stack_overflow;
-  expr |> Expr.to_string |> Printf.printf "step: %s\n%!";
   let instrumented = instrument Any Pause One 0 expr in
-  instrumented |> Expr.to_string |> Printf.printf "instrumented: %s\n%!";
-  let optimized = optimize instrumented in
-  optimized |> Expr.to_string |> Printf.printf "optimized: %s\n%!";
-  let decomposed = decompose optimized in
+  let decomposed =
+    decompose
+      (if opt then (
+         let optimized = optimize instrumented in
+         optimized)
+       else instrumented)
+  in
   let annotated =
     decomposed
     |> List.map @@ fun (ctx, expr) ->
@@ -538,4 +540,4 @@ let rec step ?(limit : int = 1024) (expr : Expr.t) :
           value |> Value.to_string
           |> Printf.sprintf "Transition a value: %s"
           |> failwith
-      | Expr expr -> step ~limit:(limit - 1) (compose ctx expr))
+      | Expr expr -> step ~limit:(limit - 1) ~opt (compose ctx expr))

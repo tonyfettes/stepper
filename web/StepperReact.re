@@ -4,7 +4,9 @@ let make = () => {
   let (history, setHistory) = React.useState(() => []);
   let (result, setResult) = React.useState(() => StepperResult.Waiting);
   let (settings, setSettings) =
-    React.useState(() => {StepperReactSettings.showResidue: false});
+    React.useState(() =>
+      {StepperReactSettings.showResidue: false, optimize: true}
+    );
   let (worker, setWorker) = React.useState(() => None);
   let (trigger, setTrigger) = React.useState(() => 0);
 
@@ -24,7 +26,11 @@ let make = () => {
       worker |> Webapi.Dom.Worker.addMessageEventListener(listener);
       switch (result) {
       | StepperResult.Pending(expr) =>
-        worker |> Webapi.Dom.Worker.postMessage(expr)
+        worker
+        |> Webapi.Dom.Worker.postMessage({
+             StepperWorkerMessage.expr,
+             optimize: settings.optimize,
+           })
       | _ => ()
       };
       setWorker(_ => Some(worker));
@@ -43,7 +49,11 @@ let make = () => {
       setTrigger(trigger => trigger + 1);
     | (Some(worker), Value(_) | Expr(_) | Error(_) | Waiting) =>
       setResult(_ => Pending(expr));
-      worker |> Webapi.Dom.Worker.postMessage(expr);
+      worker
+      |> Webapi.Dom.Worker.postMessage({
+           StepperWorkerMessage.expr,
+           optimize: settings.optimize,
+         });
     | (Some(worker), Pending(_)) =>
       setResult(_ => Pending(expr));
       worker |> Webapi.Dom.Worker.terminate();
@@ -110,7 +120,12 @@ let make = () => {
     />
     <StepperReactSettings
       value=settings
-      onChange={settings => setSettings(_ => settings)}
+      onChange={newSettings => setSettings(oldSettings => {
+        if (oldSettings.optimize != newSettings.optimize) {
+          setTrigger(trigger => trigger + 1)
+        }
+        newSettings
+      })}
     />
     <StepperReactHistory settings history={history->Belt.List.reverse} />
     <StepperReactOutput settings value=result onClick=onStep />
