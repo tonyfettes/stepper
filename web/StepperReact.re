@@ -56,7 +56,7 @@ let make = () => {
          });
     | (Some(worker), Pending(_)) =>
       setResult(_ => Pending(expr));
-      worker |> Webapi.Dom.Worker.terminate();
+      worker |> Webapi.Dom.Worker.terminate;
       setTrigger(trigger => trigger + 1);
     };
   };
