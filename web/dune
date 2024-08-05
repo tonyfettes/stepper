@@ -3,7 +3,7 @@
  (wrapped false)
  (public_name stepper.react)
  (libraries stepper reason-react melange.belt melange-webapi)
- (melange.runtime_deps StepperReactInputImpl.tsx stepper.grammar)
+ (melange.runtime_deps StepperReactInputImpl.tsx stepper.grammar stepper-language.ts)
  (modes melange)
  (preprocess
   (pps melange.ppx reason-react-ppx)))
