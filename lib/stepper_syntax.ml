@@ -33,6 +33,7 @@ module rec Pat : sig
     | Ap of t * t
     | Fun of string * Expr.t
     | Fun_any of Expr.t
+    | Fix of string * Expr.t
     | If of t * t * t
 
   val to_string : t -> string
@@ -55,6 +56,7 @@ end = struct
     | Ap of t * t
     | Fun of string * Expr.t
     | Fun_any of Expr.t
+    | Fix of string * Expr.t
     | If of t * t * t
 
   let rec to_string = function
@@ -78,6 +80,7 @@ end = struct
     | Ap (e_l, e_r) -> Printf.sprintf "%s%s" (to_string e_l) (to_string e_r)
     | Fun (x, e) -> Printf.sprintf "(fun %s -> %s)" x (Expr.to_string e)
     | Fun_any e -> Printf.sprintf "(fun $x -> %s)" (Expr.to_string e)
+    | Fix (x, e) -> Printf.sprintf "(fix %s -> %s)" x (Expr.to_string e)
     | If (p, t, f) ->
         Printf.sprintf "(if %s then %s else %s)" (to_string p) (to_string t)
           (to_string f)
@@ -98,14 +101,20 @@ end = struct
     | Sub (p_l, p_r) -> Sub (subst p_l var value, subst p_r var value)
     | Mul (p_l, p_r) -> Mul (subst p_l var value, subst p_r var value)
     | Ap (p_l, p_r) -> Ap (subst p_l var value, subst p_r var value)
-    | Fun (x, e) -> Fun (x, Expr.subst e var value)
+    | Fun (x, e) ->
+        if x == var then Fun (x, e) else Fun (x, Expr.subst e var value)
     | Fun_any e -> Fun_any (Expr.subst e var value)
+    | Fix (x, e) ->
+        if x == var then Fix (x, e) else Fix (x, Expr.subst e var value)
     | If (p, t, f) ->
         If (subst p var value, subst t var value, subst f var value)
 
   let rec matches (pat : t) (exp : Expr.t) =
+    Printf.printf "pat: %s\n%!" (Pat.to_string pat);
+    Printf.printf "exp: %s\n%!" (Expr.to_string exp);
     match (pat, exp) with
     | pat, Residue (_, _, _, exp) -> matches pat exp
+    | pat, Filter (_, _, _, exp) -> matches pat exp
     | Any, _ -> true
     | Val, Int _ | Val, Fun _ -> true
     | Val, _ -> false
@@ -129,10 +138,13 @@ end = struct
     | Ap (p_l, p_r), Ap (e_l, e_r) -> matches p_l e_l && matches p_r e_r
     | Ap _, _ -> false
     | Fun (x_p, e_p), Fun (x_e, e_e) ->
-        x_p == x_e && Expr.strip e_p == Expr.strip e_e
+        x_p == x_e && Expr.equal (Expr.strip e_p) (Expr.strip e_e)
     | Fun _, _ -> false
-    | Fun_any e_p, Fun (_, e_e) -> Expr.strip e_p == Expr.strip e_e
+    | Fun_any e_p, Fun (_, e_e) -> Expr.equal (Expr.strip e_p) (Expr.strip e_e)
     | Fun_any _, _ -> false
+    | Fix (x_p, e_p), Fix (x_e, e_e) ->
+        x_p == x_e && Expr.strip e_p == Expr.strip e_e
+    | Fix _, _ -> false
     | If (p_p, p_t, p_f), If (e_p, e_t, e_f) ->
         matches p_p e_p && matches p_t e_t && matches p_f e_f
     | If _, _ -> false
@@ -165,6 +177,7 @@ and Expr : sig
   val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
   val subst : t -> string -> t -> t
+  val equal : t -> t -> bool
 end = struct
   type t =
     | Var of string
@@ -233,18 +246,17 @@ end = struct
         |> prec_parens
     | If (p, t, f) ->
         PPrint.(
-          group
-            (group (string "if" ^/^ pretty_print p ^/^ string "then")
-            ^^ nest 2 (break 1 ^^ pretty_print t)
-            ^/^ string "else"
-            ^^ nest 2 (break 1 ^^ pretty_print f)))
+          group (string "if" ^/^ pretty_print p ^/^ string "then")
+          ^^ nest 2 (break 1 ^^ pretty_print t)
+          ^/^ string "else"
+          ^^ nest 2 (break 1 ^^ pretty_print f))
         |> prec_parens
     | Filter (p, a, g, e) ->
         let keyword = to_keyword a g in
         PPrint.(
-          string keyword
-          ^/^ string (Pat.to_string p)
-          ^/^ string "in" ^/^ pretty_print e)
+          group
+            (group (string keyword ^/^ string (Pat.to_string p) ^/^ string "in")
+            ^/^ pretty_print e))
         |> prec_parens
     | Residue (a, g, l, e) ->
         if residue then
@@ -381,6 +393,9 @@ end = struct
         If (p, t, f)
     | Filter (p, a, g, e) -> Filter (Pat.subst p x value, a, g, subst e x value)
     | Residue (a, g, l, e) -> Residue (a, g, l, subst e x value)
+
+  let equal (a : t) (b : t) : bool =
+    to_string a == to_string b
 end
 
 and Value : sig

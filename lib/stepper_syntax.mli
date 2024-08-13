@@ -28,6 +28,7 @@ module rec Pat : sig
     | Ap of t * t
     | Fun of string * Expr.t
     | Fun_any of Expr.t
+    | Fix of string * Expr.t
     | If of t * t * t
 
   val to_string : t -> string

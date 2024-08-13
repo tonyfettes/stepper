@@ -107,9 +107,11 @@ module Context = struct
             ^^ nest 2 (hardline ^^ expr_pretty_print f))
       | Filter (p, a, g, c) ->
           PPrint.(
-            string (Syntax.to_keyword a g)
-            ^/^ string (Pat.to_string p)
-            ^/^ string "in" ^/^ pretty_print c)
+            group
+              (string (Syntax.to_keyword a g)
+              ^/^ string (Pat.to_string p)
+              ^/^ string "in")
+            ^/^ pretty_print c)
       | Residue (a, g, l, c) ->
           if residue then
             let keyword = Syntax.to_keyword a g in
@@ -390,7 +392,14 @@ let rec evaluate (expr : Expr.t) : Value.t =
 let rec instrument (pat : Pat.t) (act : Act.t) (gas : Gas.t) (lvl : int)
     (exp : Expr.t) =
   let wrap exp =
-    if Pat.matches pat exp then Expr.Residue (act, gas, lvl, exp) else exp
+    Printf.printf "instrument: matching pat: %s\n%!" (Pat.to_string pat);
+    Printf.printf "instrument: matching exp: %s\n%!" (Expr.to_string exp);
+    if Pat.matches pat exp then (
+      Printf.printf "instrument: matched\n%!";
+      Expr.Residue (act, gas, lvl, exp))
+    else (
+      Printf.printf "instrument: does not match\n%!";
+      exp)
   in
   match transition exp with
   | Value _ -> exp
@@ -512,11 +521,14 @@ let rec step ?(limit : int = 1024) ?(opt : bool = true) (expr : Expr.t) :
     (Context.t * Expr.t) list Result.t =
   if Int.equal limit 0 then raise Stack_overflow;
   let instrumented = instrument Any Pause One 0 expr in
+  Printf.printf "instrumented: %s\n%!"
+    (Expr.pretty_print ~short:true ~residue:true instrumented
+    |> Printer.to_string);
   let decomposed =
     decompose
-      (if opt then (
+      (if opt then
          let optimized = optimize instrumented in
-         optimized)
+         optimized
        else instrumented)
   in
   let annotated =
@@ -529,6 +541,10 @@ let rec step ?(limit : int = 1024) ?(opt : bool = true) (expr : Expr.t) :
            let act = annotate Pause 0 ctx in
            (act, decay ctx, expr)
   in
+  annotated
+  |> List.iteri (fun idx (act, ctx, expr) ->
+         Printf.printf "annotated[%d]: %s\n%s\n%!" idx (Act.to_string act)
+           (Context.pretty_print ~residue:true ~expr ctx |> Printer.to_string));
   match List.find_opt (fun (act, _, _) -> act == Act.Eval) annotated with
   | None -> (
       match annotated |> List.map (fun (_, c, e) -> (c, e)) with
