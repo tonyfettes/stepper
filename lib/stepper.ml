@@ -108,8 +108,9 @@ module Context = struct
       | Filter (p, a, g, c) ->
           PPrint.(
             group
-              (string (Syntax.to_keyword a g)
-              ^/^ string (Pat.to_string p)
+              (string "debug"
+              ^/^ string (Syntax.to_keyword a g)
+              ^^ parens (string (Pat.to_string p))
               ^/^ string "in")
             ^/^ pretty_print c)
       | Residue (a, g, l, c) ->
@@ -147,7 +148,7 @@ module Context = struct
           (Expr.to_string f)
     | Filter (p, a, g, c) ->
         let keyword = Syntax.to_keyword a g in
-        Printf.sprintf "%s %s in %s" keyword (Pat.to_string p) (to_string c)
+        Printf.sprintf "debug %s(%s) in %s" keyword (Pat.to_string p) (to_string c)
     | Residue (a, g, l, c) ->
         let keyword = Syntax.to_keyword a g in
         Printf.sprintf "%s #%d in %s" keyword l (to_string c)

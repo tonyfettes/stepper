@@ -255,7 +255,10 @@ end = struct
         let keyword = to_keyword a g in
         PPrint.(
           group
-            (group (string keyword ^/^ string (Pat.to_string p) ^/^ string "in")
+            (group
+               (string "debug" ^/^ string keyword
+               ^^ parens (string (Pat.to_string p))
+               ^^ string "in")
             ^/^ pretty_print e))
         |> prec_parens
     | Residue (a, g, l, e) ->
@@ -293,7 +296,7 @@ end = struct
           (to_string f)
     | Filter (p, a, g, e) ->
         let keyword = to_keyword a g in
-        Printf.sprintf "(%s %s in %s)" keyword (Pat.to_string p) (to_string e)
+        Printf.sprintf "(debug %s(%s) in %s)" keyword (Pat.to_string p) (to_string e)
     | Residue (a, g, l, e) ->
         let keyword = to_keyword a g in
         Printf.sprintf "(%s #%d in %s)" keyword l (to_string e)
