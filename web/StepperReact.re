@@ -120,12 +120,14 @@ let make = () => {
     />
     <StepperReactSettings
       value=settings
-      onChange={newSettings => setSettings(oldSettings => {
-        if (oldSettings.optimize != newSettings.optimize) {
-          setTrigger(trigger => trigger + 1)
-        }
-        newSettings
-      })}
+      onChange={newSettings =>
+        setSettings(oldSettings => {
+          if (oldSettings.optimize != newSettings.optimize) {
+            setTrigger(trigger => trigger + 1);
+          };
+          newSettings;
+        })
+      }
     />
     <StepperReactHistory settings history={history->Belt.List.reverse} />
     <StepperReactOutput settings value=result onClick=onStep />

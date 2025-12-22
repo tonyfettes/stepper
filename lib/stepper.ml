@@ -520,7 +520,7 @@ let rec optimize (expr : Expr.t) : Expr.t =
 let rec step ?(limit : int = 1024) ?(opt : bool = true) (expr : Expr.t) :
     (Context.t * Expr.t) list Result.t =
   if Int.equal limit 0 then raise Stack_overflow;
-  let instrumented = instrument Any Pause One 0 expr in
+  let instrumented = instrument Any Step One 0 expr in
   Printf.printf "instrumented: %s\n%!"
     (Expr.pretty_print ~short:true ~residue:true instrumented
     |> Printer.to_string);
@@ -538,7 +538,7 @@ let rec step ?(limit : int = 1024) ?(opt : bool = true) (expr : Expr.t) :
        | Syntax.Expr.Filter _ | Syntax.Expr.Residue _ ->
            (Act.Eval, decay ctx, expr)
        | _ ->
-           let act = annotate Pause 0 ctx in
+           let act = annotate Step 0 ctx in
            (act, decay ctx, expr)
   in
   annotated

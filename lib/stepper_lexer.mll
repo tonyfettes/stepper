@@ -25,7 +25,8 @@ rule lex =
   | "==" { EQEQ }
   | "eval" { EVAL }
   | "hide" { HIDE }
-  | "pause" { PAUSE }
+  | "step" { STEP }
+  | "stop" { STOP }
   | "debug" { DEBUG }
   | "filter" { FILTER }
   | "one" { ONE }

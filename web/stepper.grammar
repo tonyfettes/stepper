@@ -50,7 +50,7 @@ pattern[@isGroup=Pattern] {
 }
 
 FilterKeyword {
-  keyword<"eval"> | keyword<"hide"> | keyword<"pause"> | keyword<"debug">
+  keyword<"eval"> | keyword<"hide"> | keyword<"step"> | keyword<"stop"> | keyword<"debug">
 }
 
 expression {

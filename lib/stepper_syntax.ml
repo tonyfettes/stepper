@@ -1,7 +1,7 @@
 module Act = struct
-  type t = Eval | Pause
+  type t = Eval | Step
 
-  let to_string = function Eval -> "eval" | Pause -> "pause"
+  let to_string = function Eval -> "eval" | Step -> "step"
 end
 
 module Gas = struct
@@ -14,8 +14,8 @@ let to_keyword ?(short = false) (act : Act.t) (gas : Gas.t) =
   match (act, gas) with
   | Eval, One -> if short then "h" else "hide"
   | Eval, All -> if short then "e" else "eval"
-  | Pause, One -> if short then "p" else "pause"
-  | Pause, All -> if short then "d" else "debug"
+  | Step, One -> if short then "p" else "stop"
+  | Step, All -> if short then "d" else "step"
 
 module rec Pat : sig
   type t =
@@ -394,8 +394,7 @@ end = struct
     | Filter (p, a, g, e) -> Filter (Pat.subst p x value, a, g, subst e x value)
     | Residue (a, g, l, e) -> Residue (a, g, l, subst e x value)
 
-  let equal (a : t) (b : t) : bool =
-    to_string a == to_string b
+  let equal (a : t) (b : t) : bool = to_string a == to_string b
 end
 
 and Value : sig

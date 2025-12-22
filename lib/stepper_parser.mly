@@ -19,10 +19,11 @@ open Stepper_syntax
 %token FILTER
 %token IN
 %token EOF
+%token DEBUG
 %token EVAL
 %token HIDE
-%token PAUSE
-%token DEBUG
+%token STEP
+%token STOP
 %token DO
 %token FOR
 %token AT
@@ -56,7 +57,7 @@ top:
 
 act:
   | EVAL { Act.Eval }
-  | PAUSE { Act.Pause }
+  | STEP { Act.Step }
   ;
 
 gas:
@@ -81,10 +82,10 @@ expr:
   | IF e1 = expr THEN e2 = expr ELSE e3 = expr { Expr.If (e1, e2, e3) }
   | FILTER p = pat DO a = act FOR g = gas IN e = expr { Expr.Filter (p, a, g, e) }
   | DO a = act FOR g = gas AT l = INT IN e = expr { Expr.Residue (a, g, l, e) }
-  | EVAL p = pat IN e = expr { Expr.Filter (p, Eval, All, e) }
-  | HIDE p = pat IN e = expr { Expr.Filter (p, Eval, One, e) }
-  | PAUSE p = pat IN e = expr { Expr.Filter (p, Pause, One, e) }
-  | DEBUG p = pat IN e = expr { Expr.Filter (p, Pause, All, e) }
+  | DEBUG EVAL LPAREN p = pat RPAREN IN e = expr { Expr.Filter (p, Eval, All, e) }
+  | DEBUG HIDE LPAREN p = pat RPAREN IN e = expr { Expr.Filter (p, Eval, One, e) }
+  | DEBUG STEP LPAREN p = pat RPAREN IN e = expr { Expr.Filter (p, Step, All, e) }
+  | DEBUG STOP LPAREN p = pat RPAREN IN e = expr { Expr.Filter (p, Step, One, e) }
   | LPAREN e = expr RPAREN { e }
   ;
 

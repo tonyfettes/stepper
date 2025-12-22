@@ -1,5 +1,5 @@
 module Act : sig
-  type t = Eval | Pause
+  type t = Eval | Step
 
   val to_string : t -> string
 end
@@ -60,7 +60,6 @@ and Expr : sig
 
   val to_string : t -> string
   val to_pat : t -> Pat.t
-
   val to_value : t -> Value.t
   val take_prec : ?residue:bool -> t -> int
   val strip : t -> t
