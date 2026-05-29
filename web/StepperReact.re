@@ -13,21 +13,22 @@ let make = () => {
   React.useEffect1(
     () => {
       let worker =
-        Webapi.Dom.Worker.makeWithUrl(
+        WebWorker.Worker.makeWithUrl(
           Webapi.Url.makeWith(
             "./StepperWorker.js",
             ~base=[%mel.raw "import.meta.url"],
           ),
+          {"type": "module"},
         );
-      let listener = (event: Webapi.Dom.MessageEvent.t) => {
-        let data: StepperResult.t = event |> Webapi.Dom.MessageEvent.data;
+      let listener = (event: WebWorker.MessageEvent.t) => {
+        let data: StepperResult.t = event |> WebWorker.MessageEvent.data;
         setResult(_ => data);
       };
-      worker |> Webapi.Dom.Worker.addMessageEventListener(listener);
+      worker |> WebWorker.Worker.addMessageEventListener(listener);
       switch (result) {
       | StepperResult.Pending(expr) =>
         worker
-        |> Webapi.Dom.Worker.postMessage({
+        |> WebWorker.Worker.postMessage({
              StepperWorkerMessage.expr,
              optimize: settings.optimize,
            })
@@ -36,7 +37,7 @@ let make = () => {
       setWorker(_ => Some(worker));
       Some(
         () =>
-          worker |> Webapi.Dom.Worker.removeMessageEventListener(listener),
+          worker |> WebWorker.Worker.removeMessageEventListener(listener),
       );
     },
     [|trigger|],
@@ -50,13 +51,13 @@ let make = () => {
     | (Some(worker), Value(_) | Expr(_) | Error(_) | Waiting) =>
       setResult(_ => Pending(expr));
       worker
-      |> Webapi.Dom.Worker.postMessage({
+      |> WebWorker.Worker.postMessage({
            StepperWorkerMessage.expr,
            optimize: settings.optimize,
          });
     | (Some(worker), Pending(_)) =>
       setResult(_ => Pending(expr));
-      worker |> Webapi.Dom.Worker.terminate;
+      worker |> WebWorker.Worker.terminate;
       setTrigger(trigger => trigger + 1);
     };
   };

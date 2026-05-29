@@ -1,7 +1,7 @@
-Webapi.Dom.dedicatedWorkerGlobalScope
-|> Webapi.Dom.DedicatedWorkerGlobalScope.addMessageEventListener(
-     (event: Webapi.Dom.MessageEvent.t) => {
-     let data: StepperWorkerMessage.t = event |> Webapi.Dom.MessageEvent.data;
+WebWorker.dedicatedWorkerGlobalScope
+|> WebWorker.DedicatedWorkerGlobalScope.addMessageEventListener(
+     (event: WebWorker.MessageEvent.t) => {
+     let data: StepperWorkerMessage.t = event |> WebWorker.MessageEvent.data;
      let result: StepperResult.t =
        switch (Stepper.step(~opt=data.optimize, data.expr)) {
        | exception (Stepper.Unbound_variable(expr) as exn)
@@ -26,6 +26,6 @@ Webapi.Dom.dedicatedWorkerGlobalScope
        | Value(value) => Value(value)
        | Expr(expr) => Expr(expr)
        };
-     Webapi.Dom.dedicatedWorkerGlobalScope
-     |> Webapi.Dom.DedicatedWorkerGlobalScope.postMessage(result);
+     WebWorker.dedicatedWorkerGlobalScope
+     |> WebWorker.DedicatedWorkerGlobalScope.postMessage(result);
    });
