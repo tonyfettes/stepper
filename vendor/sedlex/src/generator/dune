@@ -1,3 +1,0 @@
-(executable
- (name gen_unicode)
- (libraries str sedlex.utils))

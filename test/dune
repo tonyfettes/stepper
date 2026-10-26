@@ -1,3 +1,9 @@
-(tests
- (names test)
- (libraries alcotest stepper))
+(test
+ (name test)
+ (modules test)
+ (libraries stepper))
+
+(test
+ (name properties)
+ (modules properties generators)
+ (libraries stepper qcheck-core qcheck-core.runner))

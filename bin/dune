@@ -1,5 +1,3 @@
 (executable
  (name main)
- (public_name stepper)
- (modules main)
  (libraries stepper))

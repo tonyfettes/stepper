@@ -1,7 +1,0 @@
-(library
- (name sedlex)
- (public_name sedlex)
- (wrapped false)
- (libraries gen)
- (modes byte native melange)
- (flags :standard -w +A-4-9))
