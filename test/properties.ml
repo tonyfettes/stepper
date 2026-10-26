@@ -85,9 +85,7 @@ let rec along_run remaining index property exp =
     | [] -> true
     | _ ->
         let chosen =
-          match
-            List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs
-          with
+          match List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs with
           | Some o -> o
           | None -> List.nth objs (index mod List.length objs)
         in
@@ -163,9 +161,7 @@ let rec finish remaining exp =
   | [] -> exp
   | objs ->
       let chosen =
-        match
-          List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs
-        with
+        match List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs with
         | Some o -> o
         | None -> List.hd objs
       in

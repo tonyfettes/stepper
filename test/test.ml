@@ -12,8 +12,7 @@ let only exp =
   | [ obj ] -> obj
   | _ -> failwith "expected exactly one candidate"
 
-let take (obj : Step.act_obj) =
-  Ctx.compose obj.ctx (Step.transition obj.exp)
+let take (obj : Step.act_obj) = Ctx.compose obj.ctx (Step.transition obj.exp)
 
 let equal_exp expected actual =
   if expected <> actual then

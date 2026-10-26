@@ -37,9 +37,7 @@ let trace exp =
     | objs ->
         if remaining = 0 then raise (Step.Limit exp);
         let chosen =
-          match
-            List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs
-          with
+          match List.find_opt (fun (o : Step.act_obj) -> o.act = Eval) objs with
           | Some obj -> obj
           | None -> List.hd objs
         in
