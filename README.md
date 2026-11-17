@@ -138,7 +138,7 @@ filter, and visible choices are offered only when no silent candidate remains.
 - The lexer follows MoonBit's signed-literal rule: write `x - 1` for subtraction;
   `x-1` lexes as an identifier followed by a negative integer and is rejected.
 - This is an executable reference for the current MoonBit language, with no
-  web UI or static typechecker. The Agda proofs remain in `../moonbit/agda/`.
+  web UI or static typechecker. The Agda proofs are in `../agda/`.
 
 ## Validation
 
