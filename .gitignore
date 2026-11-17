@@ -1,2 +1,6 @@
 _opam/
 _build/
+web/_opam/
+web/_output/
+web/node_modules/
+web/dist/

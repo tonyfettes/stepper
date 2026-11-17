@@ -1,5 +1,6 @@
 (library
- (name stepper))
+ (name stepper)
+ (modes byte native melange))
 
 (ocamllex lexer)
 

@@ -1,0 +1,13 @@
+(dirs :standard \ node_modules _output dist _opam)
+(vendored_dirs vendor)
+
+(melange.emit
+ (target _output)
+ (alias melange)
+ (enabled_if (= %{profile} melange))
+ (promote (until-clean))
+ (module_systems es6)
+ (libraries stepper reason-react melange.belt melange-webapi pprint)
+ (runtime_deps StepperReactInputImpl.tsx stepper.grammar stepper-language.ts)
+ (preprocess
+  (pps melange.ppx reason-react-ppx)))

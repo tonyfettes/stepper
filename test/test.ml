@@ -188,14 +188,27 @@ let tests =
         check "alpha" (Matches.matches p (parse "fun a -> fun b -> a"));
         check "shadowing"
           (not (Matches.matches p (parse "fun a -> fun a -> a"))) );
-    ( "value wildcard tracks binder source",
+    ( "value wildcard follows the value judgment inside binders",
       fun () ->
-        check "fun bound"
-          (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> y"));
-        check "fix bound"
+        check "fun-bound variable"
+          (not (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> y")));
+        check "fix-bound variable"
           (not (Matches.matches (Pat.Fix ("x", Val)) (parse "fix y -> y")));
-        check "boolean compatibility"
-          (not (Matches.matches Pat.Val (Exp.Bool true))) );
+        check "free variable" (not (Matches.matches Pat.Val (Exp.Var "x")));
+        check "integer" (Matches.matches Pat.Val (int 3));
+        check "boolean" (Matches.matches Pat.Val (Exp.Bool true));
+        check "function" (Matches.matches Pat.Val (parse "fun x -> x"));
+        check "integer body"
+          (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> 3"));
+        check "boolean body"
+          (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> true"));
+        check "function body"
+          (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> fun z -> y"));
+        check "fixpoint body"
+          (Matches.matches (Pat.Fix ("x", Val)) (parse "fix y -> fun z -> y"));
+        check "non-value body"
+          (not (Matches.matches (Pat.Fun ("x", Val)) (parse "fun y -> 1 + 2")))
+    );
     ( "matching ignores wrappers even inside binders",
       fun () ->
         let e =

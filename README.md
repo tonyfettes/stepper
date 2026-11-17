@@ -1,16 +1,23 @@
 # OCaml reference implementation
 
-A standalone implementation of the stack-based filter mechanism in
-`../moonbit/lib/*.mbt`. It follows the current MoonBit implementation; the older
+A standalone implementation of the stack-based filter mechanism in the
+Filtered Stepper Calculus. The older
 implementation, kept in this repository's history under the `hazel-mini` tag, informed the OCaml module organization.
 The parser and evaluator depend only on the OCaml standard library. The
 property tests use [QCheck2](https://ocaml.org/p/qcheck-core/0.91/doc/qcheck-core/QCheck2/index.html),
 supplied by the test-only `qcheck-core` package.
 
+An interactive browser interface lives in [`web/`](web/README.md). It retains
+the original Melange / Reason React interface, with the current OCaml evaluator
+running in a Web Worker. The command-line interface below remains
+available independently.
+
 ## Build and run
 
-Requires OCaml 4.13 or later and Dune 3.0 or later, with `ocamllex` and
-`ocamlyacc` available (both ship with OCaml). From the repository root:
+Requires OCaml 5.2, Melange 4.0.1-52, and Dune 3.15 or later, with `ocamllex`
+and `ocamlyacc` available (both ship with OCaml). The same library is compiled
+for native OCaml and Melange. From the repository root, with a compatible
+opam switch active:
 
 ```sh
 opam install . --deps-only --with-test
@@ -43,12 +50,13 @@ The printer shows a context hole as `@` and internal residues as
 `eval#1[...]`, `step#2[...]`, etc. Residue notation is diagnostic output,
 not source syntax.
 
-Activate your opam switch before building. This workspace has an isolated
-switch under `_opam`, containing Dune and QCheck2; activate it from the
-repository root with `eval $(opam env --switch=.)`. That directory is
-ignored by Git. For a fresh checkout, either use an existing switch or create
-one with `opam switch create . ocaml-system --no-switch`, then activate
-it and install the dependencies as above.
+For a fresh checkout, use a compatible switch or create one with
+`opam switch create . ocaml-base-compiler.5.2.0`, activate it with
+`eval "$(opam env --switch=. --set-switch)"`, and install the dependencies above.
+The browser setup can alternatively use a switch under `web/`; from the root,
+run native commands in that switch with, for example,
+`opam exec --switch=./web -- dune runtest`. Existing switches with other compiler
+versions do not need to be replaced.
 
 ## Library
 
@@ -126,9 +134,9 @@ filter, and visible choices are offered only when no silent candidate remains.
   recursive patterns and may contain `$e` and `$v`.
 - Integers use OCaml `int32` so arithmetic has MoonBit `Int` overflow behavior.
   AST integer literals therefore look like `Syntax.Exp.Int 42l`.
-- `$v` matches integers, functions, and variables bound by a matched `fun`,
-  but not variables bound by `fix`. Like current MoonBit, it does **not** match
-  boolean literals, even though booleans are runtime values.
+- `$v` follows the value judgment: it matches integer literals, boolean
+  literals, and functions, including inside binder bodies. It does not match
+  variables, whether free or bound by `fun` or `fix`.
 - Substitution stops at shadowing binders and also substitutes filter patterns.
   Like MoonBit, it assumes closed replacements during evaluation; it does not
   rename binders to prevent capture for arbitrary open replacement terms.
@@ -137,8 +145,8 @@ filter, and visible choices are offered only when no silent candidate remains.
   a substitute for the evaluator's call-by-value decomposition.
 - The lexer follows MoonBit's signed-literal rule: write `x - 1` for subtraction;
   `x-1` lexes as an identifier followed by a negative integer and is rejected.
-- This is an executable reference for the current MoonBit language, with no
-  web UI or static typechecker. The Agda proofs are in `../agda/`.
+- This executable reference includes the language extensions above and has no
+  static typechecker. The Agda proofs are in `../agda/`.
 
 ## Validation
 
@@ -175,4 +183,4 @@ dune exec test/properties.exe -- --seed 20261003 --long
 Runs involving arbitrary fixpoints are bounded; a terminating-subset example
 that exceeds its 20,000-transition bound fails the test instead of being skipped.
 
-Validated with OCaml 5.5.0, Dune 3.23.1, and QCheck 0.91.
+Validated with OCaml 5.2.0, Dune 3.23.1, Melange 4.0.1-52, and QCheck 0.91.

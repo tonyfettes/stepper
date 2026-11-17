@@ -1,0 +1,5 @@
+(library
+ (name pprint)
+ (wrapped false)
+ (modes melange)
+ (enabled_if (= %{profile} melange)))

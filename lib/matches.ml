@@ -1,7 +1,6 @@
 open Syntax
 
-type source = Fun | Fix
-type bound = { pat : string; exp : string; source : source }
+type bound = { pat : string; exp : string }
 
 let rec index name = function
   | [] -> None
@@ -20,13 +19,7 @@ let matches pat exp =
         | Some i, Some j -> i = j
         | None, None -> x = y
         | _ -> false)
-    | Val, (Int _ | Fun _) -> true
-    | Val, Var x -> (
-        match List.find_opt (fun b -> b.exp = x) bound with
-        | Some { source = Fun; _ } -> true
-        | _ -> false)
-    (* Deliberately follows MoonBit: Bool is a runtime value, but $v does not
-       match boolean literals. See README for this compatibility detail. *)
+    | Val, e -> is_value e
     | Int x, Int y -> x = y
     | Bool x, Bool y -> x = y
     | Eq (p, q), Eq (e, f)
@@ -35,10 +28,8 @@ let matches pat exp =
     | Mul (p, q), Mul (e, f)
     | Ap (p, q), Ap (e, f) ->
         go bound p e && go bound q f
-    | Fun (x, p), Fun (y, e) ->
-        go ({ pat = x; exp = y; source = Fun } :: bound) p e
-    | Fix (x, p), Fix (y, e) ->
-        go ({ pat = x; exp = y; source = Fix } :: bound) p e
+    | Fun (x, p), Fun (y, e) | Fix (x, p), Fix (y, e) ->
+        go ({ pat = x; exp = y } :: bound) p e
     | If (p, q, r), If (c, t, f) -> go bound p c && go bound q t && go bound r f
     | _ -> false
   in
